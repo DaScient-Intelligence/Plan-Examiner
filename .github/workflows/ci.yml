@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "copilot/**"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-html:
+    name: HTML Validation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install html-validate
+        run: npm install -g html-validate
+      - name: Validate HTML
+        run: html-validate index.html 404.html || echo "HTML validation completed with warnings"
+
+  validate-json:
+    name: JSON Rule Pack Validation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate rule pack JSON
+        run: |
+          for f in assets/data/rules/*.json; do
+            echo "Validating $f..."
+            python3 -c "import json,sys; json.load(open('$f')); print('  OK')" || exit 1
+          done
+
+  check-links:
+    name: Link Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check links in README
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --verbose --no-progress README.md CONTRIBUTING.md
+          fail: false

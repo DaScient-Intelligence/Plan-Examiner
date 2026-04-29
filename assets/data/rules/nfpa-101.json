@@ -1,0 +1,154 @@
+{
+  "id": "nfpa-101",
+  "name": "NFPA 101 Life Safety Code 2021",
+  "version": "2021",
+  "jurisdiction": "US",
+  "applies_to": ["Commercial", "Institutional", "Residential"],
+  "rules": [
+    {
+      "id": "NFPA-7.3.1",
+      "code_section": "NFPA 101 §7.3.1",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Occupant Load Determination",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "nfpa_occupant_load",
+      "parameters": {
+        "load_factors": {
+          "assembly_seating": 7,
+          "assembly_standing": 5,
+          "business": 100,
+          "educational": 20,
+          "health_care_sleeping": 120,
+          "health_care_treatment": 240,
+          "hotel_guestroom": 200,
+          "industrial": 100,
+          "mercantile": 60,
+          "residential": 200,
+          "storage": 500
+        }
+      },
+      "citation": "NFPA 101 2021 §7.3.1.2 – Occupant load shall be determined using Table 7.3.1.2 load factors (sq ft per person). Use the load factor that gives the highest occupant load for each space.",
+      "remediation": "Recalculate occupant load per NFPA 101 Table 7.3.1.2. Verify each space's occupancy classification and recalculate using the appropriate net or gross area floor load factor."
+    },
+    {
+      "id": "NFPA-7.6.1",
+      "code_section": "NFPA 101 §7.6.1",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Maximum Travel Distance to Exit",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "travel_distance",
+      "parameters": {
+        "max_travel_ft": {
+          "business_sprinklered": 300,
+          "business_unsprinklered": 200,
+          "assembly_sprinklered": 250,
+          "assembly_unsprinklered": 150,
+          "mercantile_sprinklered": 250,
+          "mercantile_unsprinklered": 150,
+          "industrial_general_sprinklered": 400,
+          "industrial_general_unsprinklered": 200
+        }
+      },
+      "citation": "NFPA 101 2021 §7.6.1 – Travel distance from any point in the floor to the nearest exit shall not exceed the distances in Table 7.6. Sprinklered buildings have increased travel distance limits.",
+      "remediation": "Verify travel distance from the most remote point in each occupied space to the nearest exit does not exceed the NFPA 101 limit. Add exits or redistribute occupancy to bring all areas within limit."
+    },
+    {
+      "id": "NFPA-7.3.3",
+      "code_section": "NFPA 101 §7.3.3",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Egress Capacity Width",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "nfpa_egress_capacity",
+      "parameters": {
+        "stair_in_per_person": 0.3,
+        "level_in_per_person": 0.2,
+        "min_door_in": 32,
+        "min_corridor_in": 36
+      },
+      "citation": "NFPA 101 2021 §7.3.3.1 – Egress capacity: stairs 0.3 in/person; level components 0.2 in/person. Minimum door width 32 in., minimum corridor 36 in. (some occupancies require 44 in.).",
+      "remediation": "Calculate required egress width: occupant load × width factor. Verify each egress component meets the calculated minimum width and the absolute minimums."
+    },
+    {
+      "id": "NFPA-7.7",
+      "code_section": "NFPA 101 §7.7",
+      "category": "egress",
+      "severity": "high",
+      "label": "Exit Discharge Width",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "exit_discharge",
+      "parameters": {
+        "min_discharge_pct_direct": 50,
+        "min_width_in": 44
+      },
+      "citation": "NFPA 101 2021 §7.7 – Exit discharge shall lead to a public way. Not less than 50% of exit enclosures shall discharge directly outside at grade.",
+      "remediation": "Verify that at least 50% of exit stair enclosures discharge directly to grade level exterior without passing through building interior. Redesign exit paths where needed."
+    },
+    {
+      "id": "NFPA-7.9",
+      "code_section": "NFPA 101 §7.9",
+      "category": "egress",
+      "severity": "high",
+      "label": "Emergency Lighting",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "nfpa_emergency_lighting",
+      "parameters": {
+        "duration_hours": 1.5,
+        "min_initial_footcandles": 1,
+        "min_avg_footcandles_end": 0.6,
+        "max_ratio_high_low": 40
+      },
+      "citation": "NFPA 101 2021 §7.9.2 – Emergency lighting: initial ≥ 1 fc average along egress path; at end of 1.5-hr period, average ≥ 0.6 fc. Maximum ratio of high to low illumination: 40:1.",
+      "remediation": "Install emergency lighting units along all means of egress. Verify battery backup provides 1.5 hr operation. Space fixtures to meet 0.6 fc average at 1.5 hours."
+    },
+    {
+      "id": "NFPA-7.10",
+      "code_section": "NFPA 101 §7.10",
+      "category": "egress",
+      "severity": "medium",
+      "label": "Exit Marking and Signage",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "nfpa_exit_signs",
+      "parameters": {
+        "max_viewing_distance_ft": 100,
+        "min_letter_height_in": 6,
+        "backup_duration_hours": 1.5
+      },
+      "citation": "NFPA 101 2021 §7.10.1 – Exit signs shall be illuminated (internally or externally) and visible from any direction. Letter height ≥ 6 in. Maintain visibility ≥ 100 ft. Battery backup: 1.5 hr.",
+      "remediation": "Install illuminated exit signs with letters ≥ 6 in. high at each exit and at every change of direction in the exit access path. Provide battery backup to maintain visibility for 1.5 hr."
+    },
+    {
+      "id": "NFPA-8.3",
+      "code_section": "NFPA 101 §8.3",
+      "category": "fire",
+      "severity": "critical",
+      "label": "Smoke Compartmentation",
+      "applies_to": ["Institutional"],
+      "check_fn": "smoke_compartments",
+      "parameters": {
+        "max_area_sqft": 22500,
+        "healthcare_max_area_sqft": 22500
+      },
+      "citation": "NFPA 101 2021 §8.3 – Health care facilities shall be subdivided into smoke compartments not exceeding 22,500 sq ft in area with smoke barriers having a fire-resistance rating of ≥ 1 hr.",
+      "remediation": "Subdivide the floor into smoke compartments not exceeding 22,500 sq ft each with 1-hr fire-rated smoke barriers. Ensure smoke barriers extend to the roof deck."
+    },
+    {
+      "id": "NFPA-9.6",
+      "code_section": "NFPA 101 §9.6",
+      "category": "fire",
+      "severity": "high",
+      "label": "Fire Alarm System",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "fire_alarm",
+      "parameters": {
+        "occupant_load_threshold": 300,
+        "area_threshold_sqft": 12000,
+        "stories_threshold": 3
+      },
+      "citation": "NFPA 101 2021 §9.6.1 – Fire alarm systems shall be installed in occupancies where required by the applicable occupancy chapter. Generally required in buildings >300 persons or >12,000 sq ft.",
+      "remediation": "Install an NFPA 72-compliant fire alarm and detection system. Include smoke detection, heat detection, manual pull stations at exits, and audible/visual notification devices throughout."
+    }
+  ]
+}

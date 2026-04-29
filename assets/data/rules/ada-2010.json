@@ -1,0 +1,194 @@
+{
+  "id": "ada-2010",
+  "name": "ADA Standards for Accessible Design 2010",
+  "version": "2010",
+  "jurisdiction": "US",
+  "applies_to": ["Commercial", "Institutional", "Residential"],
+  "rules": [
+    {
+      "id": "ADA-402.2",
+      "code_section": "ADA 2010 §402.2",
+      "category": "accessibility",
+      "severity": "critical",
+      "label": "Accessible Route – Clear Width",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "accessible_route_width",
+      "parameters": { "min_width_in": 36, "passing_space_in": 60 },
+      "citation": "ADA 2010 §402.2 – Accessible routes shall have a minimum clear width of 36 in. Passing spaces of 60 in. × 60 in. are required every 200 ft where route is < 60 in. wide.",
+      "remediation": "Increase accessible route width to minimum 36 in. clear. Where the route cannot achieve 60 in. wide, provide 60 × 60 in. passing spaces at intervals not exceeding 200 ft."
+    },
+    {
+      "id": "ADA-304.3",
+      "code_section": "ADA 2010 §304.3",
+      "category": "accessibility",
+      "severity": "critical",
+      "label": "Turning Space – 60-Inch Diameter Circle",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "turning_space",
+      "parameters": { "min_diameter_in": 60, "t_shape_leg_in": 36 },
+      "citation": "ADA 2010 §304.3 – Turning spaces shall comply with either a 60 in. diameter circular space or a T-shaped space with 36 in. wide legs and 60 in. clearance.",
+      "remediation": "Provide a 60-in. diameter turning space in each accessible room, toilet room, and at the end of each accessible corridor. Alternatively, provide a T-shaped turning space per §304.3.2."
+    },
+    {
+      "id": "ADA-404.2.3",
+      "code_section": "ADA 2010 §404.2.3",
+      "category": "accessibility",
+      "severity": "critical",
+      "label": "Accessible Door – Clear Width",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "accessible_door_width",
+      "parameters": { "min_clear_width_in": 32 },
+      "citation": "ADA 2010 §404.2.3 – Doorways shall provide a clear opening of not less than 32 in. measured between the face of the door and the opposite stop, with the door open 90°.",
+      "remediation": "Replace door and/or frame to achieve minimum 32 in. clear opening width at 90° door position. Consider offset hinges or wider door units to achieve compliance."
+    },
+    {
+      "id": "ADA-404.2.4",
+      "code_section": "ADA 2010 §404.2.4",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Door Maneuvering Clearance",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "door_maneuvering",
+      "parameters": {
+        "latch_side_front_approach_in": 18,
+        "hinge_side_front_approach_in": 0,
+        "depth_in": 60
+      },
+      "citation": "ADA 2010 §404.2.4 – Maneuvering clearances shall be provided at each side of the door: front approach/latch side: 18 in. min; depth at push side: 12 in. for doors with closers and latches.",
+      "remediation": "Provide adequate maneuvering clearance at accessible doors. Front latch-side approach requires 18 in. minimum clearance beyond the latch. Recess doors or relocate adjacent walls/fixtures."
+    },
+    {
+      "id": "ADA-405.2",
+      "code_section": "ADA 2010 §405.2",
+      "category": "accessibility",
+      "severity": "critical",
+      "label": "Ramp Slope",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "ramp_slope",
+      "parameters": {
+        "max_running_slope": 0.0833,
+        "max_cross_slope": 0.02,
+        "min_width_in": 36
+      },
+      "citation": "ADA 2010 §405.2 – Ramp running slope shall not exceed 1:12 (8.33%). Cross slope shall not exceed 1:48 (2.08%). Minimum clear width 36 in.",
+      "remediation": "Redesign ramp to achieve maximum 1:12 running slope and 1:48 cross slope. If the grade change cannot be accommodated at 1:12, provide an elevator or platform lift."
+    },
+    {
+      "id": "ADA-405.9",
+      "code_section": "ADA 2010 §405.9",
+      "category": "accessibility",
+      "severity": "medium",
+      "label": "Ramp Edge Protection",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "ramp_edge",
+      "parameters": { "curb_height_in": 4 },
+      "citation": "ADA 2010 §405.9 – Ramps shall have edge protection: a curb or barrier to prevent slip-off on each side not bounded by a wall or guardrail. Minimum curb height 4 in.",
+      "remediation": "Install 4-in. minimum curb on each open side of the ramp. Alternatively, extend the ramp surface beyond the edge or install a rail system that prevents a cane from slipping off."
+    },
+    {
+      "id": "ADA-502.2",
+      "code_section": "ADA 2010 §502.2",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Accessible Parking Spaces – Count",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "accessible_parking",
+      "parameters": {
+        "ratio_table": [
+          { "max_total": 25,  "min_accessible": 1 },
+          { "max_total": 50,  "min_accessible": 2 },
+          { "max_total": 75,  "min_accessible": 3 },
+          { "max_total": 100, "min_accessible": 4 },
+          { "max_total": 150, "min_accessible": 5 },
+          { "max_total": 200, "min_accessible": 6 },
+          { "max_total": 300, "min_accessible": 7 },
+          { "max_total": 400, "min_accessible": 8 },
+          { "max_total": 500, "min_accessible": 9 }
+        ],
+        "van_ratio": 6
+      },
+      "citation": "ADA 2010 §208.2 / §502.2 – Number of accessible parking spaces per Table 208.2. 1 van-accessible space required per 6 accessible spaces.",
+      "remediation": "Provide the required number of accessible parking spaces per ADA Table 208.2, including the required proportion of van-accessible spaces (min 8 ft wide access aisle, 11 ft wide stall)."
+    },
+    {
+      "id": "ADA-502.3",
+      "code_section": "ADA 2010 §502.3",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Accessible Parking – Stall Dimensions",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "accessible_parking_dims",
+      "parameters": {
+        "min_stall_width_in": 96,
+        "min_van_stall_width_in": 132,
+        "min_access_aisle_in": 60,
+        "min_van_access_aisle_in": 96
+      },
+      "citation": "ADA 2010 §502.2 – Car accessible stall: 96 in. wide minimum. Van accessible stall: 132 in. wide minimum OR stall 96 in. wide with 96-in. access aisle.",
+      "remediation": "Restripe accessible parking to meet minimum stall dimensions. Car stalls: 96 in. wide with 60-in. access aisle. Van stalls: 132 in. wide with 60-in. aisle OR 96-in. wide with 96-in. aisle."
+    },
+    {
+      "id": "ADA-603.2",
+      "code_section": "ADA 2010 §603.2",
+      "category": "accessibility",
+      "severity": "critical",
+      "label": "Toilet Room – Turning Space",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "toilet_room_turning",
+      "parameters": { "min_diameter_in": 60 },
+      "citation": "ADA 2010 §603.2.1 – Toilet rooms shall have a turning space complying with §304: a 60-in. diameter circle or T-shaped space. The turning space shall be within the toilet room.",
+      "remediation": "Reconfigure toilet room layout to provide a 60-in. diameter turning space entirely within the room (not overlapping with the door swing)."
+    },
+    {
+      "id": "ADA-604.3",
+      "code_section": "ADA 2010 §604.3",
+      "category": "accessibility",
+      "severity": "critical",
+      "label": "Toilet Clearance",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "toilet_clearance",
+      "parameters": {
+        "min_side_transfer_in": 60,
+        "min_front_clearance_in": 48,
+        "toilet_center_to_wall_in_min": 16,
+        "toilet_center_to_wall_in_max": 18
+      },
+      "citation": "ADA 2010 §604.3 – Clearance around water closets: 60 in. on the transfer side (side approach), 48 in. in front. Toilet centerline: 16–18 in. from side wall.",
+      "remediation": "Reconfigure toilet room to provide 60-in. clear width on the transfer side and 48-in. clear depth in front of the toilet. Position toilet centerline 16–18 in. from the side wall."
+    },
+    {
+      "id": "ADA-308.2",
+      "code_section": "ADA 2010 §308.2",
+      "category": "accessibility",
+      "severity": "medium",
+      "label": "Forward Reach Range",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "reach_range",
+      "parameters": {
+        "min_height_in": 15,
+        "max_height_in": 48,
+        "max_obstruction_height_in": 34,
+        "max_reach_over_obstruction_in": 48
+      },
+      "citation": "ADA 2010 §308.2 – Forward reach: 15–48 in. AFF without obstruction. With obstruction ≤ 34 in. high, forward reach: 15–48 in. AFF.",
+      "remediation": "Relocate or adjust controls, dispensers, and other operable components to fall within the 15–48 in. forward reach range above finish floor."
+    },
+    {
+      "id": "ADA-505.4",
+      "code_section": "ADA 2010 §505.4",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Handrail Gripping Surface",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "handrail_grip",
+      "parameters": {
+        "circular_od_min_in": 1.25,
+        "circular_od_max_in": 2,
+        "non_circular_perimeter_max_in": 6.25,
+        "clearance_from_wall_in": 1.5
+      },
+      "citation": "ADA 2010 §505.4 – Handrail gripping surfaces shall have a circular cross section 1.25–2 in. in diameter, or non-circular with perimeter 4–6.25 in. and max cross-section 2.25 in. Clearance from wall: 1.5 in. min.",
+      "remediation": "Replace handrail to meet ADA gripping surface requirements. Install round profile rails 1.25–2 in. diameter with minimum 1.5-in. clear space between rail and wall/brackets."
+    }
+  ]
+}

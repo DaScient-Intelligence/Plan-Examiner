@@ -1,0 +1,33 @@
+PROJECT: Smith Residence - Room Addition
+OCCUPANCY: Residential (R-3)
+GROSS FLOOR AREA: 450 sq ft addition (2,100 sq ft total)
+CONSTRUCTION TYPE: Type VB
+STORIES: 2
+APPLICABLE CODE: IRC 2021, ADA 2010
+
+EGRESS:
+- Bedroom emergency egress windows: 5.7 sq ft opening (compliant)
+- Corridor width: 36 inches
+- Exit door width: 32 inches clear
+
+STAIRS (interior):
+- Stair width: 36 inches
+- Riser height: 8.5 inches (NOTE: code maximum is 7.75 inches per IRC)
+- Tread depth: 9 inches (NOTE: code minimum is 10 inches per IRC)
+- Handrail: provided both sides
+
+ADA:
+- Project is a private single-family residence - ADA not required
+- Owner elects to provide visitability features
+
+FIRE PROTECTION:
+- Smoke alarms: interconnected, per IRC R314
+- CO alarms: per IRC R315
+- Sprinkler: not required (IRC R313 local amendment exempts SFR)
+
+PLUMBING:
+- 1 full bathroom added
+- Water heater: 50-gallon electric
+
+LOCATION: Glendale, Arizona
+DATE: 2026-02-20

@@ -1,0 +1,209 @@
+{
+  "id": "ibc-2021",
+  "name": "International Building Code 2021",
+  "version": "2021",
+  "jurisdiction": "US",
+  "applies_to": ["Commercial", "Residential", "Industrial", "Institutional", "Infrastructure", "Other"],
+  "rules": [
+    {
+      "id": "IBC-1005.1",
+      "code_section": "IBC 2021 §1005.1",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Egress Width – Minimum Component Width",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "egress_width",
+      "parameters": { "min_inches": 28, "corridor_min_inches": 44, "stair_min_inches": 44 },
+      "citation": "IBC 2021 §1005.1 – The minimum clear width of a means of egress component shall not be less than 28 in. Corridors serving occupant loads >10 shall be not less than 44 in.",
+      "remediation": "Widen egress components to the required minimums: corridors ≥ 44 in., stairs ≥ 44 in., and all other egress paths ≥ 28 in. clear width."
+    },
+    {
+      "id": "IBC-1006.2",
+      "code_section": "IBC 2021 §1006.2",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Number of Exits Required",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "num_exits",
+      "parameters": { "occupant_load_1_exit": 49, "occupant_load_2_exits": 500, "occupant_load_3_exits": 1000 },
+      "citation": "IBC 2021 §1006.2 – Occupant loads 1-49: 1 exit; 50-500: 2 exits; 501-1000: 3 exits; >1000: 4 exits.",
+      "remediation": "Provide the minimum required number of exits for the occupant load. Verify that exits are remote from one another per §1007.1."
+    },
+    {
+      "id": "IBC-1004.1",
+      "code_section": "IBC 2021 §1004.1",
+      "category": "egress",
+      "severity": "high",
+      "label": "Occupant Load Calculation",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "occupant_load",
+      "parameters": {
+        "load_factors": {
+          "assembly_fixed": 1,
+          "assembly_unconcentrated": 15,
+          "assembly_concentrated": 7,
+          "business": 150,
+          "educational_classroom": 20,
+          "educational_other": 50,
+          "industrial_general": 100,
+          "industrial_special": 200,
+          "residential": 200,
+          "storage": 300,
+          "mercantile_ground": 60,
+          "mercantile_other": 60,
+          "hotel_guestroom": 200
+        }
+      },
+      "citation": "IBC 2021 §1004.1 – Occupant load shall be determined by dividing the floor area by the occupant load factor for the use in Table 1004.1.2.",
+      "remediation": "Recalculate occupant load using the correct IBC Table 1004.1.2 load factor for each space type. Verify each space's area and intended use."
+    },
+    {
+      "id": "IBC-1011.5",
+      "code_section": "IBC 2021 §1011.5",
+      "category": "stairs",
+      "severity": "high",
+      "label": "Stair Tread & Riser Dimensions",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "stair_geometry",
+      "parameters": {
+        "min_tread_depth_in": 11,
+        "max_riser_height_in": 7,
+        "min_riser_height_in": 4,
+        "max_riser_variance_in": 0.375
+      },
+      "citation": "IBC 2021 §1011.5.2 – Risers: 4–7 in. Treads: min 11 in. Per §1011.5.3, greatest riser height shall not exceed smallest by more than 3/8 in.",
+      "remediation": "Adjust stair risers to 4–7 in. and treads to minimum 11 in. Ensure uniformity: no riser variance exceeding 3/8 in. between any two risers in a stair flight."
+    },
+    {
+      "id": "IBC-1011.3",
+      "code_section": "IBC 2021 §1011.3",
+      "category": "stairs",
+      "severity": "medium",
+      "label": "Stair Handrails",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "stair_handrail",
+      "parameters": {
+        "min_height_in": 34,
+        "max_height_in": 38,
+        "required_both_sides_width_in": 44
+      },
+      "citation": "IBC 2021 §1011.11 – Handrails shall be provided on both sides of stairways ≥ 44 in. wide. Handrail height: 34–38 in. above stair tread nosing.",
+      "remediation": "Install handrails on both sides of stairs ≥ 44 in. wide at a height of 34–38 in. measured vertically from the tread nosing."
+    },
+    {
+      "id": "IBC-705.5",
+      "code_section": "IBC 2021 §705.5",
+      "category": "fire",
+      "severity": "critical",
+      "label": "Fire Separation Distance",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "fire_separation",
+      "parameters": {
+        "unprotected_min_ft": 5,
+        "protected_min_ft": 3,
+        "sprinklered_reduction_pct": 25
+      },
+      "citation": "IBC 2021 §705.5 – Exterior walls with fire separation distance < 5 ft shall have fire-resistance rating ≥ 1 hr. Distance < 3 ft requires 100% protection of openings.",
+      "remediation": "Verify fire separation distance to property lines and adjacent buildings. Provide required fire-resistance ratings for exterior walls and protect or eliminate openings as required."
+    },
+    {
+      "id": "IBC-903.2",
+      "code_section": "IBC 2021 §903.2",
+      "category": "fire",
+      "severity": "critical",
+      "label": "Automatic Sprinkler System",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "sprinkler_required",
+      "parameters": {
+        "area_threshold_sqft": 5000,
+        "stories_threshold": 3,
+        "high_rise_ft": 55
+      },
+      "citation": "IBC 2021 §903.2 – Automatic fire sprinkler systems are required in: buildings >5,000 sq ft in Group A, all high-rise buildings, and various other occupancy types per §903.2.1–903.2.11.",
+      "remediation": "Install an NFPA 13 automatic fire sprinkler system throughout the building. Coordinate sprinkler coverage with architectural features and obtain fire department approval."
+    },
+    {
+      "id": "IBC-1010.1",
+      "code_section": "IBC 2021 §1010.1",
+      "category": "egress",
+      "severity": "high",
+      "label": "Door Clear Width",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "door_width",
+      "parameters": {
+        "min_clear_width_in": 32,
+        "min_accessible_width_in": 32,
+        "occupant_load_threshold": 50
+      },
+      "citation": "IBC 2021 §1010.1.1 – Egress doors shall provide a clear width of not less than 32 in. when set at 90°. Means of egress doors serving occupant loads >50 shall have a minimum width of 36 in.",
+      "remediation": "Replace or rehang egress doors to achieve minimum 32 in. clear width (36 in. for high-occupancy spaces). Clear width is measured from face of door to face of stop."
+    },
+    {
+      "id": "IBC-1020.2",
+      "code_section": "IBC 2021 §1020.2",
+      "category": "egress",
+      "severity": "high",
+      "label": "Corridor Width",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "corridor_width",
+      "parameters": { "min_width_in": 44, "healthcare_min_width_in": 96 },
+      "citation": "IBC 2021 §1020.2 – Corridors shall have a minimum width of 44 in. In healthcare occupancies (Groups I-1, I-2), corridors shall be min 96 in. wide.",
+      "remediation": "Widen all egress corridors to minimum 44 in. clear width (measured from face of wall to face of wall, excluding baseboards and trim)."
+    },
+    {
+      "id": "IBC-1013.1",
+      "code_section": "IBC 2021 §1013.1",
+      "category": "egress",
+      "severity": "medium",
+      "label": "Exit Signs Required",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "exit_signs",
+      "parameters": { "occupant_load_threshold": 49 },
+      "citation": "IBC 2021 §1013.1 – Exits and exit access doors serving an occupant load >49 shall be marked by an approved exit sign.",
+      "remediation": "Install illuminated exit signs at each exit door and at each corridor junction where the direction to the nearest exit is not apparent."
+    },
+    {
+      "id": "IBC-1008.1",
+      "code_section": "IBC 2021 §1008.1",
+      "category": "egress",
+      "severity": "medium",
+      "label": "Emergency Egress Lighting",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "emergency_lighting",
+      "parameters": { "min_footcandles": 1, "duration_hours": 1.5 },
+      "citation": "IBC 2021 §1008.1 – The means of egress illumination level shall not be less than 1 footcandle at the walking surface. Emergency lighting shall maintain 1.5-hr illumination upon loss of power.",
+      "remediation": "Provide emergency egress lighting at all required means of egress paths. Install battery-backup luminaires capable of maintaining 1 fc for 90 minutes at floor level."
+    },
+    {
+      "id": "IBC-2902.1",
+      "code_section": "IBC 2021 §2902.1",
+      "category": "plumbing",
+      "severity": "medium",
+      "label": "Minimum Plumbing Fixtures",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "plumbing_fixtures",
+      "parameters": {
+        "toilet_ratio_male": 125,
+        "toilet_ratio_female": 65,
+        "lavatory_ratio": 200
+      },
+      "citation": "IBC 2021 §2902.1 – Minimum number of plumbing fixtures shall be provided per Table 2902.1. Separate toilet facilities for each sex required where occupant load > 15.",
+      "remediation": "Provide minimum plumbing fixtures per IBC Table 2902.1. Verify fixture count for each sex separately, accounting for occupant load."
+    },
+    {
+      "id": "IBC-1203.1",
+      "code_section": "IBC 2021 §1203.1",
+      "category": "ventilation",
+      "severity": "medium",
+      "label": "Natural Ventilation",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "ventilation",
+      "parameters": {
+        "min_vent_area_pct": 4,
+        "min_openable_area_pct": 4
+      },
+      "citation": "IBC 2021 §1203.1 – Natural ventilation openings shall be ≥ 4% of floor area of the room or space.",
+      "remediation": "Provide openable windows or other natural ventilation openings totaling at least 4% of the floor area served, or provide mechanical ventilation per IBC §1203.2."
+    }
+  ]
+}

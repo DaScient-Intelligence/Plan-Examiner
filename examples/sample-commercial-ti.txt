@@ -1,0 +1,39 @@
+PROJECT: Acme Restaurant - Tenant Improvement
+OCCUPANCY: Assembly (A-2) - Restaurant
+GROSS FLOOR AREA: 3,200 sq ft
+CONSTRUCTION TYPE: Type VB
+STORIES: 1
+APPLICABLE CODE: IBC 2021, ADA 2010, NFPA 101
+
+EGRESS:
+- Number of exits: 2
+- Corridor width: 44 inches
+- Exit door width: 36 inches clear
+- Travel distance to exit: 85 feet
+- Emergency lighting: provided
+- Exit signs: provided at all exits
+
+STAIRS: N/A (single story)
+
+ADA ACCESSIBILITY:
+- Accessible route width: 44 inches
+- Restroom turning radius: 48 inches (NOTE: code requires 60 inches minimum)
+- Accessible parking: 4 spaces provided (2 van-accessible)
+- Door hardware: lever type
+- Counter height: 36 inches AFF
+
+FIRE PROTECTION:
+- Sprinkler system: NFPA 13 throughout
+- Fire alarm: addressable system
+
+PLUMBING FIXTURES (based on 160 occupant load):
+- Water closets (women): 3
+- Water closets (men): 2
+- Urinals: 2
+- Lavatories: 4
+- Service sink: 1
+
+NOTES:
+- Project is in Glendale, Arizona
+- Architect: Sample Firm LLC
+- Date: 2026-01-15

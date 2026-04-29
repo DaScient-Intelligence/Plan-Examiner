@@ -1,0 +1,19 @@
+{
+  "name": "plan-examiner",
+  "version": "2.0.0",
+  "description": "AI-powered building plan review and code compliance",
+  "homepage": "https://dascient.github.io/Plan-Examiner",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DaScient/Plan-Examiner"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/styles.input.css -o ./assets/css/styles.css --minify",
+    "dev:css": "tailwindcss -i ./assets/css/styles.input.css -o ./assets/css/styles.css --watch",
+    "serve": "npx serve . -p 3000"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

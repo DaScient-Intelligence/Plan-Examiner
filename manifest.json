@@ -1,0 +1,31 @@
+{
+  "name": "plan-examiner",
+  "short_name": "PlanExaminer",
+  "description": "AI-powered building plan review and code compliance",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030d1a",
+  "theme_color": "#030d1a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "assets/icons/screenshot.png",
+      "sizes": "1280x800",
+      "type": "image/png"
+    }
+  ]
+}

@@ -3,1252 +3,767 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Plan-Examiner – AI-powered building plan review and code compliance. Upload DWG, PDF, or DOCX plans and receive automated compliance reports in minutes." />
+  <meta name="description" content="Plan-Examiner - AI-powered building plan review and code compliance. Upload PDF, DXF, DWG, or DOCX plans and receive automated IBC, ADA, and NFPA compliance reports in minutes." />
+  <meta name="theme-color" content="#030d1a" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="Plan-Examiner | AI-Powered Building Plan Review &amp; Compliance" />
+  <meta property="og:description" content="Automated building code compliance review - IBC, ADA, NFPA. Upload your plans and get findings in minutes." />
+  <meta property="og:type" content="website" />
   <title>Plan-Examiner | AI-Powered Building Plan Review &amp; Compliance</title>
-
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
-          fontFamily: {
-            sans:    ['Inter', 'sans-serif'],
-            display: ['Space Grotesk', 'sans-serif'],
-            mono:    ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
-          },
-          colors: {
-            pe: {
-              accent:    '#38bdf8',
-              accentHov: '#0ea5e9',
-              dim:       '#7dd3fc',
-              dark:      '#030d1a',
-              navy:      '#071428',
-            }
-          },
-          animation: {
-            'scanline':   'scan 3.5s linear infinite',
-            'float':      'float 6s ease-in-out infinite',
-            'pulse-slow': 'pulse 8s cubic-bezier(0.4,0,0.6,1) infinite',
-          },
+          fontFamily: { sans: ['Inter','sans-serif'], display: ['Space Grotesk','sans-serif'], mono: ['ui-monospace','SFMono-Regular','Menlo','monospace'] },
+          animation: { 'scanline': 'scan 3.5s linear infinite', 'float': 'float 6s ease-in-out infinite', 'pulse-slow': 'pulse 8s cubic-bezier(0.4,0,0.6,1) infinite' },
           keyframes: {
-            scan: {
-              '0%':   { transform: 'translateY(-20px)', opacity: '1' },
-              '85%':  { opacity: '1' },
-              '100%': { transform: 'translateY(540px)', opacity: '0' },
-            },
-            float: {
-              '0%,100%': { transform: 'translateY(0)' },
-              '50%':     { transform: 'translateY(-14px)' },
-            },
-          },
-        },
-      },
+            scan:  { '0%': { transform: 'translateY(-20px)', opacity: '1' }, '85%': { opacity: '1' }, '100%': { transform: 'translateY(540px)', opacity: '0' } },
+            float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-14px)' } }
+          }
+        }
+      }
     }
   </script>
-
-  <style>
-    /* ── Base ─────────────────────────────────────────────────── */
-    body { background-color: #030d1a; color: #e2e8f0; overflow-x: hidden; }
-
-    /* ── Ambient orbs ────────────────────────────────────────── */
-    .ambient-bg { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
-    .orb-1 {
-      position: absolute; top: -15%; left: -10%; width: 55vw; height: 55vw;
-      background: radial-gradient(circle, rgba(56,189,248,.09) 0%, transparent 70%);
-      filter: blur(90px);
-    }
-    .orb-2 {
-      position: absolute; bottom: -20%; right: -10%; width: 65vw; height: 65vw;
-      background: radial-gradient(circle, rgba(99,102,241,.06) 0%, transparent 70%);
-      filter: blur(110px);
-    }
-
-    /* ── Grid overlay ────────────────────────────────────────── */
-    .grid-overlay {
-      position: fixed; inset: 0; z-index: -1; pointer-events: none;
-      background-image:
-        linear-gradient(to right,  rgba(255,255,255,.015) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,.015) 1px, transparent 1px);
-      background-size: 50px 50px;
-    }
-
-    /* ── Glass utilities ─────────────────────────────────────── */
-    .glass {
-      background: rgba(255,255,255,.025);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,.07);
-      box-shadow: 0 8px 32px rgba(0,0,0,.3);
-      transition: background .3s, border-color .3s;
-    }
-    .glass:hover { background: rgba(255,255,255,.045); border-color: rgba(255,255,255,.12); }
-    .glass-accent { background: rgba(56,189,248,.05); border: 1px solid rgba(56,189,248,.18); }
-    .glass-nav {
-      background: rgba(3,13,26,.75);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,.05);
-    }
-
-    /* ── Terminal ─────────────────────────────────────────────── */
-    .terminal {
-      background: rgba(3,13,26,.9);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(56,189,248,.15);
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,.8), 0 0 60px rgba(56,189,248,.04), inset 0 1px 0 rgba(255,255,255,.05);
-      position: relative;
-    }
-    .terminal-bar {
-      background: rgba(255,255,255,.02);
-      padding: 14px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid rgba(255,255,255,.05);
-    }
-    .dot { width: 12px; height: 12px; border-radius: 50%; }
-    .scan-line {
-      position: absolute; top: 0; left: 0; right: 0; height: 2px;
-      background: linear-gradient(90deg, transparent, #38bdf8, transparent);
-      box-shadow: 0 0 12px #38bdf8;
-      z-index: 5;
-    }
-
-    /* ── Typography helpers ──────────────────────────────────── */
-    .text-gradient {
-      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .text-accent-gradient {
-      background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .section-label {
-      font-family: 'ui-monospace', monospace;
-      font-size: .7rem; font-weight: 700; letter-spacing: .15em;
-      text-transform: uppercase; color: #38bdf8;
-    }
-
-    /* ── Buttons ─────────────────────────────────────────────── */
-    .btn-accent {
-      background: #38bdf8; color: #030d1a; font-weight: 700;
-      padding: 14px 28px; border-radius: 999px; border: none; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 10px;
-      transition: background .2s, transform .15s, box-shadow .2s;
-      box-shadow: 0 0 20px rgba(56,189,248,.2);
-    }
-    .btn-accent:hover { background: #0ea5e9; transform: translateY(-2px); box-shadow: 0 0 30px rgba(56,189,248,.35); }
-    .btn-ghost {
-      background: rgba(255,255,255,.04); color: #e2e8f0; font-weight: 600;
-      padding: 14px 28px; border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.1); cursor: pointer;
-      display: inline-flex; align-items: center; gap: 10px;
-      transition: background .2s, transform .15s, border-color .2s;
-    }
-    .btn-ghost:hover { background: rgba(255,255,255,.08); transform: translateY(-2px); border-color: rgba(255,255,255,.2); }
-
-    /* ── Inputs ──────────────────────────────────────────────── */
-    .pe-input {
-      width: 100%; background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.1); border-radius: 10px;
-      padding: 11px 16px; color: #e2e8f0; font-size: .9rem; outline: none;
-      transition: border-color .2s, box-shadow .2s;
-    }
-    .pe-input:focus { border-color: rgba(56,189,248,.5); box-shadow: 0 0 0 3px rgba(56,189,248,.1); }
-    .pe-input::placeholder { color: rgba(148,163,184,.5); }
-    .pe-input option { background: #071428; color: #e2e8f0; }
-
-    /* ── File drop zone ──────────────────────────────────────── */
-    .file-drop {
-      border: 2px dashed rgba(56,189,248,.3); border-radius: 14px;
-      padding: 36px 24px; text-align: center; cursor: pointer;
-      transition: border-color .2s, background .2s;
-    }
-    .file-drop:hover, .file-drop.drag-over {
-      border-color: rgba(56,189,248,.65); background: rgba(56,189,248,.04);
-    }
-    .file-drop input[type="file"] { display: none; }
-
-    /* ── Accordion ───────────────────────────────────────────── */
-    .accordion-content { max-height: 0; overflow: hidden; transition: max-height .45s ease; }
-    .accordion-item.open .accordion-content { max-height: 2400px; }
-    .accordion-chevron { transition: transform .3s ease; }
-    .accordion-item.open .accordion-chevron { transform: rotate(180deg); }
-
-    /* ── Pricing cards ───────────────────────────────────────── */
-    .price-card {
-      background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07);
-      border-radius: 20px; padding: 36px 28px; position: relative;
-      transition: transform .3s, border-color .3s, box-shadow .3s;
-    }
-    .price-card:hover { transform: translateY(-6px); border-color: rgba(56,189,248,.2); box-shadow: 0 20px 48px rgba(0,0,0,.45); }
-    .price-card.featured { border-color: rgba(56,189,248,.4); background: rgba(56,189,248,.05); box-shadow: 0 0 40px rgba(56,189,248,.1); }
-    .price-card.ring-highlight { box-shadow: 0 0 0 2px rgba(56,189,248,.5), 0 0 20px rgba(56,189,248,.1); }
-
-    /* ── Badge ───────────────────────────────────────────────── */
-    .badge-accent {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 14px; border-radius: 999px; font-size: .75rem; font-weight: 600;
-      background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.25); color: #38bdf8;
-    }
-    .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 8px #38bdf8; animation: pulse 2s ease-in-out infinite; }
-
-    /* ── Modal ───────────────────────────────────────────────── */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 200;
-      background: rgba(3,13,26,.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center; padding: 20px;
-      opacity: 0; pointer-events: none; transition: opacity .3s;
-    }
-    .modal-overlay.active { opacity: 1; pointer-events: all; }
-    .modal-box {
-      background: #071428; border: 1px solid rgba(56,189,248,.2); border-radius: 20px;
-      width: 100%; max-width: 820px; max-height: 90vh;
-      display: flex; flex-direction: column;
-      box-shadow: 0 25px 80px rgba(0,0,0,.8);
-      transform: scale(.96); transition: transform .3s;
-    }
-    .modal-overlay.active .modal-box { transform: scale(1); }
-    .modal-body { overflow-y: auto; flex: 1; padding: 24px; }
-    .tab-btn { padding: 8px 18px; border-radius: 8px; font-size: .85rem; font-weight: 600; cursor: pointer; border: none; background: transparent; color: #64748b; transition: all .2s; }
-    .tab-btn.active { background: rgba(56,189,248,.1); color: #38bdf8; }
-    .tab-pane { display: none; }
-    .tab-pane.active { display: block; }
-
-    /* ── Scrollbar ───────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(56,189,248,.3); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(56,189,248,.5); }
-
-    /* ── Text selection ──────────────────────────────────────── */
-    ::selection { background: #38bdf8; color: #030d1a; }
-    ::-moz-selection { background: #38bdf8; color: #030d1a; }
-
-    /* ── Tier radio selectors ────────────────────────────────── */
-    .tier-label input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
-    .tier-box {
-      border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px 8px;
-      text-align: center; cursor: pointer; transition: all .2s;
-      background: rgba(255,255,255,.025); color: #64748b;
-    }
-    .tier-label input[type="radio"]:checked + .tier-box {
-      border-color: rgba(56,189,248,.5); background: rgba(56,189,248,.08); color: #38bdf8;
-    }
-  </style>
+  <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
 <body class="antialiased font-sans">
 
-  <!-- Ambient -->
-  <div class="ambient-bg">
-    <div class="orb-1 animate-pulse-slow"></div>
-    <div class="orb-2 animate-pulse-slow"></div>
-  </div>
-  <div class="grid-overlay"></div>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <!-- ──────────────────── NAVIGATION ──────────────────────── -->
-  <nav class="fixed w-full z-50 glass-nav" id="mainNav">
-    <div class="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between h-16">
+<div class="ambient-bg" aria-hidden="true">
+  <div class="orb-1 animate-pulse-slow"></div>
+  <div class="orb-2 animate-pulse-slow"></div>
+</div>
+<div class="grid-overlay" aria-hidden="true"></div>
 
-      <a href="#" class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);">
-          <i class="fas fa-file-circle-check text-sm" style="color:#38bdf8;"></i>
-        </div>
-        <span class="font-display font-bold text-lg tracking-tight text-white">Plan<span class="text-accent-gradient">Examiner</span></span>
+<!-- NAVIGATION -->
+<nav class="fixed w-full z-50 glass-nav" role="navigation" aria-label="Main navigation">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between h-16">
+    <a href="#" class="flex items-center gap-2.5" aria-label="Plan-Examiner home">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);" aria-hidden="true">
+        <i class="fas fa-file-circle-check text-sm" style="color:#38bdf8;"></i>
+      </div>
+      <span class="font-display font-bold text-lg tracking-tight text-white">Plan<span class="text-accent-gradient">Examiner</span></span>
+    </a>
+    <div class="hidden md:flex items-center gap-8 text-sm" style="color:#94a3b8;">
+      <a href="#about" class="hover:text-white transition-colors">About</a>
+      <a href="#guidelines" class="hover:text-white transition-colors">Guidelines</a>
+      <a href="#upload" class="hover:text-white transition-colors">Upload</a>
+      <a href="#pricing" class="hover:text-white transition-colors">Pricing</a>
+      <a href="#contact" class="hover:text-white transition-colors">Contact</a>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="aiSettingsBtn" title="AI Settings" aria-label="Configure AI settings"
+        class="hidden md:block text-xs font-mono px-3 py-1.5 rounded-lg border transition-colors cursor-pointer"
+        style="background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1);color:#64748b;">AI: Not configured</button>
+      <button onclick="PE.App.openCommandPalette()" title="Command palette (Ctrl+K)"
+        aria-label="Open command palette"
+        class="hidden md:flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors"
+        style="color:#475569;border-color:rgba(255,255,255,.07);background:rgba(255,255,255,.02);">
+        <i class="fas fa-magnifying-glass" style="font-size:.65rem;"></i><span>Ctrl+K</span>
+      </button>
+      <a href="#subscribe" class="hidden md:block text-sm transition-colors" style="color:#94a3b8;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Subscribe</a>
+      <a href="#upload" class="btn-accent" style="font-size:.85rem;padding:10px 20px;">
+        Start Review <i class="fas fa-arrow-right text-xs" aria-hidden="true"></i>
       </a>
+      <button id="mobileMenuBtn" class="md:hidden p-1 transition-colors" style="color:#94a3b8;" aria-label="Toggle mobile menu" aria-expanded="false" aria-controls="mobileMenu">
+        <i class="fas fa-bars text-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+  <div id="mobileMenu" class="md:hidden hidden border-t" style="border-color:rgba(255,255,255,.05);" role="menu">
+    <div class="px-6 py-5 flex flex-col gap-5 text-sm" style="color:#94a3b8;">
+      <a href="#about" class="hover:text-white transition-colors">About</a>
+      <a href="#guidelines" class="hover:text-white transition-colors">Guidelines</a>
+      <a href="#upload" class="hover:text-white transition-colors">Upload Plan</a>
+      <a href="#pricing" class="hover:text-white transition-colors">Pricing</a>
+      <a href="#subscribe" class="hover:text-white transition-colors">Subscribe</a>
+      <a href="#contact" class="hover:text-white transition-colors">Contact</a>
+      <button onclick="PE.App.openAIModal()" class="text-left hover:text-white transition-colors" style="background:none;border:none;cursor:pointer;color:#64748b;padding:0;">
+        <i class="fas fa-key mr-2" aria-hidden="true"></i>AI Settings
+      </button>
+    </div>
+  </div>
+</nav>
 
-      <div class="hidden md:flex items-center gap-8 text-sm" style="color:#94a3b8;">
-        <a href="#about"      class="hover:text-white transition-colors">About</a>
-        <a href="#guidelines" class="hover:text-white transition-colors">Guidelines</a>
-        <a href="#upload"     class="hover:text-white transition-colors">Upload</a>
-        <a href="#pricing"    class="hover:text-white transition-colors">Pricing</a>
-        <a href="#contact"    class="hover:text-white transition-colors">Contact</a>
+<main id="main-content">
+
+<!-- HERO -->
+<section id="about" class="relative min-h-screen flex items-center pt-16 px-6" aria-label="About Plan-Examiner">
+  <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center py-24">
+    <div>
+      <div class="badge-accent mb-8" role="status">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        AI Plan Review Engine &mdash; Live
       </div>
-
-      <div class="flex items-center gap-3">
-        <a href="#subscribe" class="hidden md:block text-sm transition-colors" style="color:#94a3b8;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#94a3b8'">Subscribe</a>
-        <a href="#upload" class="btn-accent" style="font-size:.85rem;padding:10px 20px;">
-          Start Review <i class="fas fa-arrow-right text-xs"></i>
+      <h1 class="font-display font-bold leading-tight tracking-tight text-gradient mb-6" style="font-size:clamp(2.4rem,5.5vw,4.2rem);">
+        Intelligent<br/>Plan Review.<br/><span class="text-accent-gradient">Built to Comply.</span>
+      </h1>
+      <p class="text-lg leading-relaxed mb-10 max-w-lg" style="color:#94a3b8;">
+        Plan-Examiner uses a deterministic rule engine + agentic AI to review architectural drawings against IBC, ADA, NFPA, and local codes &mdash; with citations, scores, and correction letters in minutes.
+      </p>
+      <div class="flex flex-wrap gap-4 mb-12">
+        <a href="#upload" class="btn-accent text-base">
+          <i class="fas fa-upload text-sm" aria-hidden="true"></i> Upload Your Plans
         </a>
-        <button id="mobileMenuBtn" class="md:hidden p-1 transition-colors" style="color:#94a3b8;" onclick="toggleMobileMenu()">
-          <i class="fas fa-bars text-lg"></i>
-        </button>
+        <a href="#guidelines" class="btn-ghost text-base">
+          <i class="fas fa-book-open text-sm" aria-hidden="true"></i> View Guidelines
+        </a>
       </div>
-    </div>
-
-    <!-- Mobile menu -->
-    <div id="mobileMenu" class="md:hidden hidden border-t" style="border-color:rgba(255,255,255,.05);">
-      <div class="px-6 py-5 flex flex-col gap-5 text-sm" style="color:#94a3b8;">
-        <a href="#about"      onclick="closeMobileMenu()" class="hover:text-white transition-colors">About</a>
-        <a href="#guidelines" onclick="closeMobileMenu()" class="hover:text-white transition-colors">Guidelines</a>
-        <a href="#upload"     onclick="closeMobileMenu()" class="hover:text-white transition-colors">Upload Plan</a>
-        <a href="#pricing"    onclick="closeMobileMenu()" class="hover:text-white transition-colors">Pricing</a>
-        <a href="#subscribe"  onclick="closeMobileMenu()" class="hover:text-white transition-colors">Subscribe</a>
-        <a href="#contact"    onclick="closeMobileMenu()" class="hover:text-white transition-colors">Contact</a>
-      </div>
-    </div>
-  </nav>
-
-
-  <!-- ────────────────────── HERO ───────────────────────────── -->
-  <section id="about" class="relative min-h-screen flex items-center pt-16 px-6">
-    <div class="max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-16 items-center py-24">
-
-      <!-- Copy -->
-      <div>
-        <div class="badge-accent mb-8">
-          <span class="pulse-dot"></span>
-          AI Plan Review Engine — Live
-        </div>
-
-        <h1 class="font-display font-bold leading-[1.06] tracking-tight text-gradient mb-6" style="font-size:clamp(2.4rem,5.5vw,4.2rem);">
-          Intelligent<br/>Plan Review.<br/><span class="text-accent-gradient">Built to Comply.</span>
-        </h1>
-
-        <p class="text-lg leading-relaxed mb-10 max-w-lg" style="color:#94a3b8;">
-          Plan-Examiner uses agentic AI and vectorized code libraries to review architectural drawings against IBC, ADA, NFPA, and local codes — in minutes, not days.
-        </p>
-
-        <div class="flex flex-wrap gap-4 mb-12">
-          <a href="#upload" class="btn-accent text-base">
-            <i class="fas fa-upload text-sm"></i> Upload Your Plans
-          </a>
-          <a href="#guidelines" class="btn-ghost text-base">
-            <i class="fas fa-book-open text-sm" style="opacity:.7;"></i> View Guidelines
-          </a>
-        </div>
-
-        <!-- Stats -->
-        <div class="grid grid-cols-3 gap-6 pt-8" style="border-top:1px solid rgba(255,255,255,.05);">
-          <div>
-            <div class="font-display font-bold text-white mb-1" style="font-size:1.9rem;">10×</div>
-            <div class="text-xs" style="color:#64748b;">Faster reviews</div>
-          </div>
-          <div>
-            <div class="font-display font-bold text-white mb-1" style="font-size:1.9rem;">98%</div>
-            <div class="text-xs" style="color:#64748b;">Code accuracy</div>
-          </div>
-          <div>
-            <div class="font-display font-bold text-white mb-1" style="font-size:1.9rem;">60%</div>
-            <div class="text-xs" style="color:#64748b;">Fewer revisions</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Terminal mockup -->
-      <div class="relative animate-float hidden lg:block">
-        <div class="absolute inset-0 rounded-3xl blur-3xl opacity-50" style="background:linear-gradient(135deg,rgba(56,189,248,.12),rgba(99,102,241,.1));"></div>
-        <div class="terminal">
-          <div class="scan-line animate-scanline"></div>
-          <div class="terminal-bar">
-            <div class="flex gap-2">
-              <div class="dot" style="background:#ff5f56;"></div>
-              <div class="dot" style="background:#ffbd2e;"></div>
-              <div class="dot" style="background:#27c93f;"></div>
-            </div>
-            <span class="font-mono uppercase tracking-widest" style="font-size:.65rem;color:#64748b;">PlanExaminer™ Engine v2.0</span>
-            <div class="w-4 h-4 rounded-full border-2 animate-spin" style="border-color:#38bdf8;border-top-color:transparent;"></div>
-          </div>
-          <div class="p-7 font-mono text-xs space-y-3">
-            <div style="color:#64748b;">&gt; <span class="text-white">INIT</span> --mode=agentic --code=IBC2024</div>
-            <div style="color:#94a3b8;">&gt; Loading: <span style="color:#7dd3fc;">Residential_Unit4B_v2.dwg</span></div>
-            <div style="color:#94a3b8;">&gt; Parsing geometry... <span style="color:#38bdf8;">OK</span></div>
-            <div style="color:#94a3b8;">&gt; Running compliance matrix...</div>
-            <div class="mt-4 space-y-2.5">
-              <div class="glass rounded-xl p-3 flex items-center justify-between">
-                <div class="flex items-center gap-3" style="color:#cbd5e1;"><i class="fas fa-ruler-combined w-4" style="color:#64748b;"></i> Egress Width Analysis</div>
-                <span class="text-xs font-bold px-2.5 py-1 rounded-md tracking-wider" style="color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);">PASS</span>
-              </div>
-              <div class="glass rounded-xl p-3 flex items-center justify-between">
-                <div class="flex items-center gap-3" style="color:#cbd5e1;"><i class="fas fa-fire-alt w-4" style="color:#64748b;"></i> Fire Separation Distance</div>
-                <span class="text-xs font-bold px-2.5 py-1 rounded-md tracking-wider" style="color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);">PASS</span>
-              </div>
-              <div class="glass rounded-xl p-3 flex items-center justify-between" style="border-color:rgba(251,191,36,.2);background:rgba(251,191,36,.04);">
-                <div class="flex items-center gap-3" style="color:#cbd5e1;"><i class="fas fa-stairs w-4" style="color:#64748b;"></i> Stair Tread / Riser</div>
-                <span class="text-xs font-bold px-2.5 py-1 rounded-md tracking-wider" style="color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);">REVIEW</span>
-              </div>
-              <div class="glass rounded-xl p-3 flex items-center justify-between" style="border-color:rgba(248,113,113,.2);background:rgba(248,113,113,.04);">
-                <div class="flex items-center gap-3" style="color:#fff;"><i class="fas fa-wheelchair w-4" style="color:#f87171;"></i> ADA Turning Radius</div>
-                <span class="text-xs font-bold px-2.5 py-1 rounded-md tracking-wider" style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);">FLAGGED</span>
-              </div>
-            </div>
-            <div class="text-xs mt-1" style="color:#fbbf24;">&gt; WARN: Spatial violation @ Coord [14.2, 88.1]</div>
-            <div style="color:#94a3b8;">&gt; Generating redline overlay...</div>
-            <div class="mt-4 pt-4 flex items-center justify-between" style="border-top:1px solid rgba(255,255,255,.06);">
-              <div class="flex items-center gap-3" style="color:#94a3b8;">
-                <div class="w-3.5 h-3.5 rounded-full border-2 animate-spin" style="border-color:#38bdf8;border-top-color:transparent;"></div>
-                Compiling compliance report...
-              </div>
-              <span class="font-bold text-white">82%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-
-  <!-- ─────────────── HOW IT WORKS / ENGINE ─────────────────── -->
-  <section class="py-28 px-6 relative z-10">
-    <div class="max-w-7xl mx-auto">
-      <div class="text-center mb-16">
-        <p class="section-label mb-4">The Engine</p>
-        <h2 class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Seamless Agentic Review</h2>
-        <p class="max-w-xl mx-auto" style="color:#94a3b8;">Purpose-built for building departments, architects, and contractors who need accurate compliance at scale.</p>
-      </div>
-      <div class="grid md:grid-cols-3 gap-6">
-
-        <article class="glass p-9 rounded-3xl group">
-          <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg text-white mb-7 group-hover:scale-110 transition-transform" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);">1</div>
-          <h3 class="font-display font-bold text-white text-xl mb-3">Multi-Format Ingestion</h3>
-          <p class="text-sm leading-relaxed" style="color:#94a3b8;">Securely upload DWG, PDF, or DOCX files. Our parser extracts raw coordinate geometry natively, bypassing lossy rasterization.</p>
-        </article>
-
-        <article class="glass glass-accent p-9 rounded-3xl group relative overflow-hidden">
-          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl" style="background:linear-gradient(135deg,rgba(56,189,248,.07),transparent);"></div>
-          <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg mb-7 group-hover:scale-110 transition-transform relative z-10" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);color:#38bdf8;box-shadow:0 0 15px rgba(56,189,248,.15);">2</div>
-          <h3 class="font-display font-bold text-white text-xl mb-3 relative z-10">Vector Compliance Analysis</h3>
-          <p class="text-sm leading-relaxed relative z-10" style="color:#94a3b8;">Agentic orchestrators cross-reference spatial layouts against 2024 IBC, Eurocode, ADA, NFPA, and localized municipal amendments.</p>
-        </article>
-
-        <article class="glass p-9 rounded-3xl group">
-          <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg text-white mb-7 group-hover:scale-110 transition-transform" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);">3</div>
-          <h3 class="font-display font-bold text-white text-xl mb-3">Actionable Output</h3>
-          <p class="text-sm leading-relaxed" style="color:#94a3b8;">Receive automated completeness matrices, dimensionally precise PDF redlines, and code-specific correction logs — ready to act on.</p>
-        </article>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ──────────────── SUBMISSION GUIDELINES ────────────────── -->
-  <section id="guidelines" class="py-28 px-6 relative z-10">
-    <div class="max-w-4xl mx-auto">
-      <div class="text-center mb-16">
-        <p class="section-label mb-4">Guidelines</p>
-        <h2 class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Submission Guidelines &amp; Review Process</h2>
-        <p class="max-w-xl mx-auto" style="color:#94a3b8;">Follow these guidelines to ensure a smooth, efficient review of your project plans.</p>
-      </div>
-
-      <div class="space-y-3" id="accordion">
-
-        <!-- Item 1: What can you submit -->
-        <div class="accordion-item glass rounded-2xl overflow-hidden">
-          <button class="accordion-trigger w-full flex items-center justify-between p-6 text-left">
-            <div class="flex items-center gap-4">
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;">
-                <i class="fas fa-building"></i>
-              </div>
-              <span class="font-display font-bold text-white text-lg">What Can You Submit?</span>
-            </div>
-            <i class="fas fa-chevron-down accordion-chevron flex-shrink-0 ml-4" style="color:#64748b;"></i>
-          </button>
-          <div class="accordion-content">
-            <div class="px-6 pb-7 grid md:grid-cols-2 gap-8">
-              <div>
-                <h4 class="font-display font-bold mb-4 text-xs uppercase tracking-wider" style="color:#38bdf8;">Residential</h4>
-                <ul class="space-y-2.5">
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Swimming Pools</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Solar Projects</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Single Family Residential</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Additions &amp; Remodeling</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Carport to Garage Conversion</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>New Patio Additions</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Detached Accessory Structures</li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="font-display font-bold mb-4 text-xs uppercase tracking-wider" style="color:#38bdf8;">Commercial</h4>
-                <ul class="space-y-2.5">
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>New Ground-Up Construction</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Tenant Improvements</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Signs &amp; Banners</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Certificate of Occupancy (No Work)</li>
-                  <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Fire Alarms &amp; AFES</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Item 2: General requirements -->
-        <div class="accordion-item glass rounded-2xl overflow-hidden">
-          <button class="accordion-trigger w-full flex items-center justify-between p-6 text-left">
-            <div class="flex items-center gap-4">
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;">
-                <i class="fas fa-file-alt"></i>
-              </div>
-              <span class="font-display font-bold text-white text-lg">General Requirements</span>
-            </div>
-            <i class="fas fa-chevron-down accordion-chevron flex-shrink-0 ml-4" style="color:#64748b;"></i>
-          </button>
-          <div class="accordion-content">
-            <div class="px-6 pb-7 space-y-3">
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">1</span>
-                <p class="text-sm" style="color:#cbd5e1;">All construction documents should be submitted in <strong class="text-white">PDF format</strong> as a complete set.</p>
-              </div>
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">2</span>
-                <p class="text-sm" style="color:#cbd5e1;">Supplementary documents must be submitted <strong class="text-white">separately</strong> using standardized naming conventions.</p>
-              </div>
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">3</span>
-                <p class="text-sm" style="color:#cbd5e1;"><strong class="text-white">TrueType fonts</strong> are required for plan sets. Recommended: Arial, Times New Roman, Courier, Helvetica.</p>
-              </div>
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">4</span>
-                <p class="text-sm" style="color:#cbd5e1;">Avoid using <strong class="text-white">red ink</strong> in any drawings or documents submitted.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Item 3: Cover sheet requirements -->
-        <div class="accordion-item glass rounded-2xl overflow-hidden">
-          <button class="accordion-trigger w-full flex items-center justify-between p-6 text-left">
-            <div class="flex items-center gap-4">
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;">
-                <i class="fas fa-layer-group"></i>
-              </div>
-              <span class="font-display font-bold text-white text-lg">Plan &amp; Cover Sheet Requirements</span>
-            </div>
-            <i class="fas fa-chevron-down accordion-chevron flex-shrink-0 ml-4" style="color:#64748b;"></i>
-          </button>
-          <div class="accordion-content">
-            <div class="px-6 pb-7">
-              <p class="text-sm mb-5" style="color:#94a3b8;">Your submission must include a cover sheet summarizing:</p>
-              <div class="grid grid-cols-2 gap-3">
-                <div class="glass rounded-xl p-3.5 flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-tag text-xs" style="color:#38bdf8;"></i> Project Title &amp; Description</div>
-                <div class="glass rounded-xl p-3.5 flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-map-marker-alt text-xs" style="color:#38bdf8;"></i> Project Location</div>
-                <div class="glass rounded-xl p-3.5 flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-user text-xs" style="color:#38bdf8;"></i> Applicant / Owner Details</div>
-                <div class="glass rounded-xl p-3.5 flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-list text-xs" style="color:#38bdf8;"></i> Project Scope Overview</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Item 4: Review and approval -->
-        <div class="accordion-item glass rounded-2xl overflow-hidden">
-          <button class="accordion-trigger w-full flex items-center justify-between p-6 text-left">
-            <div class="flex items-center gap-4">
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;">
-                <i class="fas fa-clipboard-check"></i>
-              </div>
-              <span class="font-display font-bold text-white text-lg">Review &amp; Approval Process</span>
-            </div>
-            <i class="fas fa-chevron-down accordion-chevron flex-shrink-0 ml-4" style="color:#64748b;"></i>
-          </button>
-          <div class="accordion-content">
-            <div class="px-6 pb-7 space-y-3">
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">1</span>
-                <p class="text-sm" style="color:#cbd5e1;">Your submission will be reviewed <strong class="text-white">concurrently</strong> by relevant departments.</p>
-              </div>
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">2</span>
-                <p class="text-sm" style="color:#cbd5e1;">If revisions are required, you will receive a <strong class="text-white">marked-up package</strong> with correction instructions.</p>
-              </div>
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">3</span>
-                <p class="text-sm" style="color:#cbd5e1;">After revisions, upload a <strong class="text-white">complete updated set</strong> for further review.</p>
-              </div>
-              <div class="glass rounded-xl p-4 flex items-start gap-4">
-                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;">4</span>
-                <p class="text-sm" style="color:#cbd5e1;">Upon approval, you will be contacted regarding <strong class="text-white">permit payment</strong>, and final documents delivered via email.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ──────────────────── UPLOAD FORM ──────────────────────── -->
-  <section id="upload" class="py-28 px-6 relative z-10">
-    <div class="max-w-3xl mx-auto">
-      <div class="text-center mb-14">
-        <p class="section-label mb-4">Upload</p>
-        <h2 class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Preview Our Review Process</h2>
-        <p style="color:#94a3b8;">Upload your <span style="color:#38bdf8;font-weight:600;">.docx or .dwg</span> file with project details to see how our AI review engine works. <span style="font-style:italic;color:#64748b;">Subscribe for the full report.</span></p>
-      </div>
-
-      <div class="glass rounded-3xl p-8 md:p-10">
-        <form id="uploadForm" novalidate>
-
-          <!-- Project details -->
-          <div class="mb-9">
-            <h3 class="font-display font-bold text-white mb-6 flex items-center gap-3">
-              <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;"><i class="fas fa-info"></i></div>
-              Project Details
-            </h3>
-            <div class="grid md:grid-cols-2 gap-5">
-              <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Building / Infrastructure Type</label>
-                <select class="pe-input" id="buildingType" required>
-                  <option value="">Select type...</option>
-                  <option value="Residential">Residential</option>
-                  <option value="Commercial">Commercial</option>
-                  <option value="Industrial">Industrial</option>
-                  <option value="Institutional">Institutional</option>
-                  <option value="Infrastructure">Infrastructure</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Applicable Building Code</label>
-                <select class="pe-input" id="buildingCode" required>
-                  <option value="">Select code...</option>
-                  <option value="2024 IBC">2024 International Building Code (IBC)</option>
-                  <option value="Local">Local Building Code</option>
-                  <option value="Eurocode">European Building Code (Eurocode)</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">City</label>
-                <input type="text" class="pe-input" id="city" placeholder="e.g., Glendale" required />
-              </div>
-              <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">State / Province</label>
-                <input type="text" class="pe-input" id="state" placeholder="e.g., Arizona" required />
-              </div>
-              <div class="md:col-span-2">
-                <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Country</label>
-                <input type="text" class="pe-input" id="country" placeholder="e.g., United States" required />
-              </div>
-            </div>
-          </div>
-
-          <!-- File drop -->
-          <div class="mb-8">
-            <h3 class="font-display font-bold text-white mb-4 flex items-center gap-3">
-              <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;"><i class="fas fa-upload"></i></div>
-              Plan File
-            </h3>
-            <label class="file-drop block" id="fileDrop">
-              <input type="file" id="planFile" accept=".docx,.dwg" required />
-              <div id="fileDropContent">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;">
-                  <i class="fas fa-cloud-upload-alt"></i>
-                </div>
-                <p class="text-white font-semibold mb-1">Drop your file here or click to browse</p>
-                <p class="text-sm" style="color:#64748b;">Supported formats: <span style="color:#38bdf8;">.docx</span> and <span style="color:#38bdf8;">.dwg</span></p>
-              </div>
-              <div id="fileSelected" class="hidden">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3" style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);color:#34d399;">
-                  <i class="fas fa-file-check"></i>
-                </div>
-                <p class="font-semibold" id="fileNameDisplay" style="color:#34d399;">file.dwg</p>
-                <p class="text-xs mt-1" style="color:#64748b;">Click to change file</p>
-              </div>
-            </label>
-          </div>
-
-          <div id="uploadError" class="hidden mb-5 p-4 rounded-xl flex items-center gap-3 text-sm" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;">
-            <i class="fas fa-exclamation-circle"></i>
-            <span id="uploadErrorMsg"></span>
-          </div>
-
-          <button type="submit" class="btn-accent w-full justify-center text-base" style="padding:15px;">
-            <i class="fas fa-magnifying-glass text-sm"></i> Analyze Plan
-          </button>
-        </form>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ────────────────────── PRICING ────────────────────────── -->
-  <section id="pricing" class="py-28 px-6 relative z-10">
-    <div class="max-w-7xl mx-auto">
-      <div class="text-center mb-16">
-        <p class="section-label mb-4">Pricing</p>
-        <h2 class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Simple, Transparent Pricing</h2>
-        <p class="max-w-xl mx-auto" style="color:#94a3b8;">Use the calculator to estimate your cost, then choose the tier that fits your project volume.</p>
-      </div>
-
-      <!-- Calculator -->
-      <div class="glass glass-accent rounded-3xl p-8 max-w-2xl mx-auto mb-14">
-        <h3 class="font-display font-bold text-white text-xl mb-6 flex items-center gap-3">
-          <i class="fas fa-calculator" style="color:#38bdf8;"></i> Pricing Calculator
-        </h3>
-        <div class="grid md:grid-cols-3 gap-5 mb-6">
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Number of Plans</label>
-            <input type="number" class="pe-input" id="numPlans" min="1" value="1" oninput="autoCalc()" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Property Value ($)</label>
-            <input type="number" class="pe-input" id="propValue" min="0" placeholder="e.g., 400000" oninput="autoCalc()" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Project Size (sq ft)</label>
-            <input type="number" class="pe-input" id="projectSize" min="0" placeholder="e.g., 1500" oninput="autoCalc()" />
-          </div>
-        </div>
-        <button onclick="calculatePrice()" class="btn-ghost w-full justify-center mb-5" style="font-size:.875rem;padding:12px;">
-          <i class="fas fa-calculator text-xs"></i> Calculate Estimate
-        </button>
-        <div id="calcResult" class="hidden glass rounded-2xl p-5">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-xs uppercase tracking-wider mb-1" style="color:#64748b;">Estimated Total</div>
-              <div class="font-display font-bold text-white" style="font-size:2.5rem;" id="calcAmount">$0.00</div>
-              <div class="text-xs mt-1" style="color:#64748b;" id="calcBreakdown"></div>
-            </div>
-            <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;">
-              <i class="fas fa-receipt text-2xl"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tier cards -->
-      <div class="grid md:grid-cols-3 gap-6">
-
-        <!-- Starter -->
-        <div class="price-card" id="tierStarter">
-          <div class="text-xs font-mono font-bold uppercase tracking-widest mb-3" style="color:#64748b;">Starter</div>
-          <div class="flex items-baseline gap-1 mb-2">
-            <span class="font-display font-bold text-white" style="font-size:3rem;">$0</span>
-            <span class="text-sm" style="color:#64748b;">/ month</span>
-          </div>
-          <p class="text-sm mb-6" style="color:#94a3b8;">Perfect for small firms or one-off reviews. Up to 3 plans per month.</p>
-          <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin-bottom:1.5rem;" />
-          <ul class="space-y-3 mb-8">
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Up to 3 plan reviews / month</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>IBC &amp; IRC code sets</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>PDF compliance reports</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Email support</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#475569;"><i class="fas fa-times text-xs w-4" style="color:#334155;"></i>API access</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#475569;"><i class="fas fa-times text-xs w-4" style="color:#334155;"></i>Custom code amendments</li>
-          </ul>
-          <a href="#subscribe" class="btn-ghost w-full justify-center" style="font-size:.875rem;padding:14px;">Get Started Free</a>
-        </div>
-
-        <!-- Pro -->
-        <div class="price-card featured" id="tierPro">
-          <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
-            <span class="font-bold rounded-full whitespace-nowrap" style="background:#38bdf8;color:#030d1a;font-size:.7rem;padding:5px 16px;">Most Popular</span>
-          </div>
-          <div class="text-xs font-mono font-bold uppercase tracking-widest mb-3" style="color:#38bdf8;">Pro</div>
-          <div class="flex items-baseline gap-1 mb-2">
-            <span class="font-display font-bold text-white" style="font-size:3rem;">$299</span>
-            <span class="text-sm" style="color:#64748b;">/ month</span>
-          </div>
-          <p class="text-sm mb-6" style="color:#94a3b8;">Optimized for active design firms. Up to 6 plans per month.</p>
-          <hr style="border:none;border-top:1px solid rgba(56,189,248,.2);margin-bottom:1.5rem;" />
-          <ul class="space-y-3 mb-8">
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>4–6 plan reviews / month</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>All major code sets + ADA</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Revision tracking</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>REST API access</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Priority support</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#475569;"><i class="fas fa-times text-xs w-4" style="color:#334155;"></i>Custom code amendments</li>
-          </ul>
-          <a href="#subscribe" class="btn-accent w-full justify-center" style="font-size:.875rem;padding:14px;">Start Free Trial</a>
-        </div>
-
-        <!-- Elite -->
-        <div class="price-card" id="tierElite">
-          <div class="text-xs font-mono font-bold uppercase tracking-widest mb-3" style="color:#64748b;">Elite</div>
-          <div class="flex items-baseline gap-1 mb-2">
-            <span class="font-display font-bold text-white" style="font-size:3rem;">Custom</span>
-          </div>
-          <p class="text-sm mb-6" style="color:#94a3b8;">High-volume submissions for municipalities and large firms.</p>
-          <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin-bottom:1.5rem;" />
-          <ul class="space-y-3 mb-8">
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Unlimited reviews</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Custom code amendments</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Permit system integration</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>Dedicated account manager</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>SSO &amp; enterprise security</li>
-            <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;"></i>SLA guarantee</li>
-          </ul>
-          <a href="#subscribe" class="btn-ghost w-full justify-center" style="font-size:.875rem;padding:14px;">Contact Sales</a>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ──────────────────── SUBSCRIBE ────────────────────────── -->
-  <section id="subscribe" class="py-28 px-6 relative z-10">
-    <div class="max-w-xl mx-auto">
-      <div class="text-center mb-12">
-        <p class="section-label mb-4">Subscribe</p>
-        <h2 class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Unlock Full Access</h2>
-        <p style="color:#94a3b8;">Submit a subscription inquiry to receive complete submission instructions and premium review features.</p>
-      </div>
-
-      <div class="glass rounded-3xl p-8 md:p-10">
-
-        <!-- Tier selector -->
-        <div class="grid grid-cols-3 gap-3 mb-8">
-          <label class="tier-label relative">
-            <input type="radio" name="subTier" value="Starter" />
-            <div class="tier-box">
-              <div class="text-xl mb-1">🌱</div>
-              <div class="text-xs font-bold">Starter</div>
-              <div class="text-xs mt-1" style="color:#64748b;">1–3 plans</div>
-            </div>
-          </label>
-          <label class="tier-label relative">
-            <input type="radio" name="subTier" value="Pro" checked />
-            <div class="tier-box" style="border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.07);color:#38bdf8;">
-              <div class="text-xl mb-1">⚡</div>
-              <div class="text-xs font-bold">Pro</div>
-              <div class="text-xs mt-1" style="color:#7dd3fc;">4–6 plans</div>
-            </div>
-          </label>
-          <label class="tier-label relative">
-            <input type="radio" name="subTier" value="Elite" />
-            <div class="tier-box">
-              <div class="text-xl mb-1">🏢</div>
-              <div class="text-xs font-bold">Elite</div>
-              <div class="text-xs mt-1" style="color:#64748b;">Unlimited</div>
-            </div>
-          </label>
-        </div>
-
-        <form id="subscribeForm" novalidate class="space-y-5">
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Name</label>
-            <input type="text" class="pe-input" id="subscriberName" placeholder="Full name" required />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Email</label>
-            <input type="email" class="pe-input" id="subscriberEmail" placeholder="you@company.com" required />
-          </div>
-
-          <!-- Encryption key -->
-          <div class="glass rounded-xl p-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold uppercase tracking-wider" style="color:#64748b;">Secure Inquiry Key</span>
-              <button type="button" id="copyKeyBtn" onclick="copyEncKey()" class="text-xs font-semibold transition-colors" style="color:#38bdf8;">
-                <i class="fas fa-copy mr-1"></i>Copy
-              </button>
-            </div>
-            <div class="font-mono text-xs break-all" style="color:#cbd5e1;" id="displayEncKey">Generating…</div>
-            <input type="hidden" id="encryptionKey" />
-          </div>
-
-          <p class="text-xs" style="color:#64748b;">Your inquiry, including this unique key, will be securely forwarded to <span style="color:#38bdf8;font-weight:600;">PlanExaminer@dascient.com</span>.</p>
-
-          <div id="subscribeError" class="hidden p-4 rounded-xl flex items-center gap-3 text-sm" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;">
-            <i class="fas fa-exclamation-circle"></i>
-            <span id="subscribeErrorMsg"></span>
-          </div>
-
-          <button type="submit" class="btn-accent w-full justify-center text-base" style="padding:15px;">
-            <i class="fas fa-paper-plane text-sm"></i> Submit Inquiry
-          </button>
-        </form>
-
-        <div id="subscribeResult" class="mt-5"></div>
-      </div>
-    </div>
-  </section>
-
-
-  <!-- ──────────────────── FOOTER ───────────────────────────── -->
-  <footer id="contact" class="relative z-10 mt-4">
-    <div class="glass mx-4 md:mx-8 rounded-t-3xl pt-20 pb-10 px-8 lg:px-16 overflow-hidden" style="border-bottom:none;">
-      <div class="absolute bottom-0 right-0 w-96 h-96 rounded-full pointer-events-none" style="background:rgba(56,189,248,.04);filter:blur(100px);"></div>
-
-      <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16 relative z-10">
-
-        <!-- Brand -->
-        <div class="lg:col-span-1">
-          <div class="flex items-center gap-2.5 mb-5">
-            <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);">
-              <i class="fas fa-file-circle-check text-sm" style="color:#38bdf8;"></i>
-            </div>
-            <span class="font-display font-bold text-lg text-white">Plan<span class="text-accent-gradient">Examiner</span></span>
-          </div>
-          <p class="text-sm leading-relaxed mb-6 max-w-xs" style="color:#64748b;">AI-powered building plan review and code compliance. Faster approvals, fewer revisions, full audit trail.</p>
-          <div class="flex gap-3">
-            <a href="#" class="w-9 h-9 rounded-xl glass flex items-center justify-center text-sm transition-all" style="color:#64748b;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#64748b'"><i class="fab fa-x-twitter"></i></a>
-            <a href="#" class="w-9 h-9 rounded-xl glass flex items-center justify-center text-sm transition-all" style="color:#64748b;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#64748b'"><i class="fab fa-linkedin-in"></i></a>
-            <a href="#" class="w-9 h-9 rounded-xl glass flex items-center justify-center text-sm transition-all" style="color:#64748b;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#64748b'"><i class="fab fa-github"></i></a>
-          </div>
-        </div>
-
-        <!-- Platform -->
+      <div class="grid grid-cols-3 gap-6 pt-8" style="border-top:1px solid rgba(255,255,255,.05);">
         <div>
-          <h4 class="font-display font-bold text-xs uppercase tracking-widest mb-6 text-white">Platform</h4>
-          <ul class="space-y-3 text-sm" style="color:#64748b;">
-            <li><a href="#about"      class="hover:text-white transition-colors">Residential Engine</a></li>
-            <li><a href="#about"      class="hover:text-white transition-colors">Commercial Suite</a></li>
-            <li><a href="#guidelines" class="hover:text-white transition-colors">Submission Guidelines</a></li>
-            <li><a href="#pricing"    class="hover:text-white transition-colors">Pricing &amp; Tiers</a></li>
-          </ul>
+          <div class="font-display font-bold text-white mb-1" style="font-size:1.9rem;">10&times;</div>
+          <div class="text-xs" style="color:#64748b;">Faster reviews</div>
         </div>
-
-        <!-- Resources -->
         <div>
-          <h4 class="font-display font-bold text-xs uppercase tracking-widest mb-6 text-white">Resources</h4>
-          <ul class="space-y-3 text-sm" style="color:#64748b;">
-            <li><a href="#" class="hover:text-white transition-colors">Documentation</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">API Reference</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">Code Library</a></li>
-            <li><a href="#" class="hover:text-white transition-colors">System Status</a></li>
-          </ul>
+          <div class="font-display font-bold text-white mb-1" style="font-size:1.9rem;">98%</div>
+          <div class="text-xs" style="color:#64748b;">Code accuracy</div>
         </div>
-
-        <!-- Contact -->
         <div>
-          <h4 class="font-display font-bold text-xs uppercase tracking-widest mb-6 text-white">Connect</h4>
-          <ul class="space-y-4 text-sm" style="color:#64748b;">
-            <li class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl glass flex items-center justify-center text-xs flex-shrink-0" style="color:#38bdf8;"><i class="fas fa-phone"></i></div>
-              <span class="font-mono">623-850-0991</span>
-            </li>
-            <li class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl glass flex items-center justify-center text-xs flex-shrink-0" style="color:#38bdf8;"><i class="fas fa-envelope"></i></div>
-              <span class="font-mono" style="font-size:.75rem;">PlanExaminer@dascient.com</span>
-            </li>
-            <li class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl glass flex items-center justify-center text-xs flex-shrink-0" style="color:#38bdf8;"><i class="fas fa-map-marker-alt"></i></div>
-              <span>Glendale, Arizona</span>
-            </li>
-          </ul>
-        </div>
-
-      </div>
-
-      <div class="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 relative z-10" style="border-top:1px solid rgba(255,255,255,.05);">
-        <p class="font-mono" style="font-size:.75rem;color:#334155;">© 2026 Plan-Examiner · DaScient. All rights reserved.</p>
-        <div class="flex gap-6 font-mono" style="font-size:.75rem;color:#334155;">
-          <a href="#" class="hover:text-white transition-colors">Privacy</a>
-          <a href="#" class="hover:text-white transition-colors">Terms</a>
-          <a href="#" class="hover:text-white transition-colors">Security</a>
+          <div class="font-display font-bold text-white mb-1" style="font-size:1.9rem;">60%</div>
+          <div class="text-xs" style="color:#64748b;">Fewer revisions</div>
         </div>
       </div>
     </div>
-  </footer>
-
-
-  <!-- ─────────────── PLAN PREVIEW MODAL ────────────────────── -->
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal-box">
-      <div class="flex items-center justify-between p-6" style="border-bottom:1px solid rgba(255,255,255,.05);">
-        <h3 class="font-display font-bold text-white text-lg flex items-center gap-3">
-          <i class="fas fa-microscope" style="color:#38bdf8;"></i> Plan Preview &amp; Analysis
-        </h3>
-        <button onclick="closeModal()" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-sm transition-colors" style="color:#64748b;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#64748b'">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="flex gap-2 px-6 pt-4">
-        <button class="tab-btn active" data-tab="preview" onclick="switchTab('preview')">
-          <i class="fas fa-eye mr-2 text-xs"></i>Preview
-        </button>
-        <button class="tab-btn" data-tab="analysis" onclick="switchTab('analysis')">
-          <i class="fas fa-chart-bar mr-2 text-xs"></i>Analysis
-        </button>
-      </div>
-
-      <div class="modal-body">
-        <div class="tab-pane active" id="tabPreview">
-          <div id="previewContainer" class="glass rounded-2xl p-6 text-sm overflow-auto" style="max-height:380px;color:#94a3b8;min-height:120px;">
-            <p class="text-center py-8" style="color:#475569;">Plan preview will appear here…</p>
+    <!-- Terminal mockup -->
+    <div class="relative animate-float hidden lg:block" aria-hidden="true">
+      <div class="terminal">
+        <div class="scan-line animate-scanline"></div>
+        <div class="terminal-bar">
+          <div class="flex gap-2">
+            <div class="dot" style="background:#ff5f56;"></div>
+            <div class="dot" style="background:#ffbd2e;"></div>
+            <div class="dot" style="background:#27c93f;"></div>
           </div>
+          <span class="font-mono uppercase tracking-widest" style="font-size:.65rem;color:#64748b;">PlanExaminer Engine v2.0</span>
+          <div class="w-4 h-4 rounded-full border-2 animate-spin" style="border-color:#38bdf8;border-top-color:transparent;"></div>
         </div>
-        <div class="tab-pane" id="tabAnalysis">
-          <div id="analysisContent" class="space-y-4">
-            <p class="text-center py-8" style="color:#475569;">Run a plan upload to see analysis results.</p>
+        <div class="p-7 font-mono text-xs space-y-3">
+          <div style="color:#64748b;">&gt; <span class="text-white">INIT</span> --mode=agentic --code=IBC2024</div>
+          <div style="color:#94a3b8;">&gt; Loading: <span style="color:#7dd3fc;">TenantImprovement.dxf</span></div>
+          <div style="color:#94a3b8;">&gt; Parsing geometry... <span style="color:#38bdf8;">OK</span> &middot; 847 entities</div>
+          <div style="color:#94a3b8;">&gt; Running IBC + ADA + NFPA rules...</div>
+          <div class="mt-4 space-y-2.5">
+            <div class="glass rounded-xl p-3 flex items-center justify-between">
+              <div class="flex items-center gap-3" style="color:#cbd5e1;"><i class="fas fa-ruler-combined w-4" style="color:#64748b;"></i> Egress Width &sect;1005.1</div>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-md" style="color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);">PASS</span>
+            </div>
+            <div class="glass rounded-xl p-3 flex items-center justify-between">
+              <div class="flex items-center gap-3" style="color:#cbd5e1;"><i class="fas fa-fire-alt w-4" style="color:#64748b;"></i> Fire Separation &sect;705.5</div>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-md" style="color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);">PASS</span>
+            </div>
+            <div class="glass rounded-xl p-3 flex items-center justify-between" style="border-color:rgba(251,191,36,.2);background:rgba(251,191,36,.04);">
+              <div class="flex items-center gap-3" style="color:#cbd5e1;"><i class="fas fa-stairs w-4" style="color:#64748b;"></i> Stair Tread &sect;1011.5</div>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-md" style="color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);">REVIEW</span>
+            </div>
+            <div class="glass rounded-xl p-3 flex items-center justify-between" style="border-color:rgba(248,113,113,.2);background:rgba(248,113,113,.04);">
+              <div class="flex items-center gap-3" style="color:#fff;"><i class="fas fa-wheelchair w-4" style="color:#f87171;"></i> ADA Turning &sect;304.3</div>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-md" style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);">FLAGGED</span>
+            </div>
           </div>
-          <div class="mt-6 glass glass-accent rounded-2xl p-5 text-center">
-            <p class="text-sm font-semibold mb-3" style="color:#38bdf8;">
-              <i class="fas fa-lock mr-2"></i>Subscribe for the complete review and detailed correction notices.
-            </p>
-            <a href="#subscribe" onclick="closeModal()" class="btn-accent" style="font-size:.875rem;padding:10px 24px;">Subscribe Now</a>
+          <div style="color:#fbbf24;">&gt; WARN: ADA turning space 48 in. &lt; required 60 in.</div>
+          <div style="color:#94a3b8;">&gt; Generating report...</div>
+          <div class="mt-3 pt-3 flex items-center justify-between" style="border-top:1px solid rgba(255,255,255,.06);">
+            <div class="flex items-center gap-3" style="color:#94a3b8;"><div class="w-3.5 h-3.5 rounded-full border-2 animate-spin" style="border-color:#38bdf8;border-top-color:transparent;"></div>Compiling...</div>
+            <span class="font-bold text-white">78%</span>
           </div>
         </div>
       </div>
     </div>
   </div>
+</section>
 
+<!-- HOW IT WORKS -->
+<section class="py-28 px-6 relative z-10" aria-labelledby="engine-heading">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-16">
+      <p class="section-label mb-4">The Engine</p>
+      <h2 id="engine-heading" class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Seamless Agentic Review</h2>
+      <p class="max-w-xl mx-auto" style="color:#94a3b8;">Purpose-built for building departments, architects, and contractors who need accurate compliance at scale.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6">
+      <article class="glass p-9 rounded-3xl group">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg text-white mb-7 group-hover:scale-110 transition-transform" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);" aria-hidden="true">1</div>
+        <h3 class="font-display font-bold text-white text-xl mb-3">Multi-Format Ingestion</h3>
+        <p class="text-sm leading-relaxed" style="color:#94a3b8;">Upload PDF, DXF, DOCX, or DWG. Our in-browser parser extracts text, geometry, and layer data &mdash; no server upload required.</p>
+      </article>
+      <article class="glass glass-accent p-9 rounded-3xl group relative overflow-hidden">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg mb-7 group-hover:scale-110 transition-transform" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);color:#38bdf8;" aria-hidden="true">2</div>
+        <h3 class="font-display font-bold text-white text-xl mb-3">Deterministic Rule Engine</h3>
+        <p class="text-sm leading-relaxed" style="color:#94a3b8;">Versioned JSON rule packs for IBC 2021, ADA 2010, and NFPA 101. Every finding carries the exact code section and remediation text.</p>
+      </article>
+      <article class="glass p-9 rounded-3xl group">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center font-display font-bold text-lg text-white mb-7 group-hover:scale-110 transition-transform" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);" aria-hidden="true">3</div>
+        <h3 class="font-display font-bold text-white text-xl mb-3">Actionable Output</h3>
+        <p class="text-sm leading-relaxed" style="color:#94a3b8;">Printable compliance report, correction letter download, JSON export, and an AI chat panel to ask follow-up questions &mdash; all client-side.</p>
+      </article>
+    </div>
+    <div class="mt-10 glass glass-accent rounded-2xl p-5 max-w-2xl mx-auto text-center">
+      <p class="text-sm" style="color:#94a3b8;"><i class="fas fa-lock mr-2" style="color:#38bdf8;" aria-hidden="true"></i><strong class="text-white">100% private.</strong> All parsing and analysis runs entirely in your browser. No plan data is uploaded to any server unless you explicitly use the BYO-key LLM feature.</p>
+    </div>
+  </div>
+</section>
 
-  <!-- ─────────────────────── SCRIPTS ───────────────────────── -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js"></script>
-  <script>
+<!-- GUIDELINES -->
+<section id="guidelines" class="py-28 px-6 relative z-10" aria-labelledby="guidelines-heading">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-16">
+      <p class="section-label mb-4">Guidelines</p>
+      <h2 id="guidelines-heading" class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Submission Guidelines &amp; Review Process</h2>
+      <p class="max-w-xl mx-auto" style="color:#94a3b8;">Follow these guidelines to ensure a smooth, efficient review of your project plans.</p>
+    </div>
+    <div class="space-y-3">
 
-    // ── Encryption key ─────────────────────────────────────────
-    function generateHexKey() {
-      const arr = new Uint8Array(16);
-      window.crypto.getRandomValues(arr);
-      return Array.from(arr, b => ('00' + b.toString(16)).slice(-2)).join('');
-    }
+      <div class="accordion-item glass rounded-2xl overflow-hidden">
+        <button class="accordion-trigger w-full flex items-center justify-between p-6 text-left" aria-expanded="false">
+          <div class="flex items-center gap-4">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;" aria-hidden="true"><i class="fas fa-building"></i></div>
+            <span class="font-display font-bold text-white text-lg">What Can You Submit?</span>
+          </div>
+          <i class="fas fa-chevron-down accordion-chevron flex-shrink-0 ml-4" style="color:#64748b;" aria-hidden="true"></i>
+        </button>
+        <div class="accordion-content" role="region">
+          <div class="px-6 pb-7 grid md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="font-display font-bold mb-4 text-xs uppercase tracking-wider" style="color:#38bdf8;">Residential</h4>
+              <ul class="space-y-2.5">
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Swimming Pools</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Solar Projects</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Single Family Residential</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Additions &amp; Remodeling</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Carport to Garage Conversion</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>New Patio Additions</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Detached Accessory Structures</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-display font-bold mb-4 text-xs uppercase tracking-wider" style="color:#38bdf8;">Commercial</h4>
+              <ul class="space-y-2.5">
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>New Ground-Up Construction</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Tenant Improvements</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Signs &amp; Banners</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Certificate of Occupancy</li>
+                <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Fire Alarms &amp; AFES</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const key = generateHexKey();
-      document.getElementById('encryptionKey').value = key;
-      document.getElementById('displayEncKey').textContent = key;
-    });
+      <div class="accordion-item glass rounded-2xl overflow-hidden">
+        <button class="accordion-trigger w-full flex items-center justify-between p-6 text-left" aria-expanded="false">
+          <div class="flex items-center gap-4">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;" aria-hidden="true"><i class="fas fa-file-alt"></i></div>
+            <span class="font-display font-bold text-white text-lg">General Requirements</span>
+          </div>
+          <i class="fas fa-chevron-down accordion-chevron flex-shrink-0 ml-4" style="color:#64748b;" aria-hidden="true"></i>
+        </button>
+        <div class="accordion-content" role="region">
+          <div class="px-6 pb-7 space-y-3">
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">1</span><p class="text-sm" style="color:#cbd5e1;">Construction documents submitted as a <strong class="text-white">complete set in PDF format</strong> (or DXF/DOCX for automated review).</p></div>
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">2</span><p class="text-sm" style="color:#cbd5e1;">Supplementary documents submitted <strong class="text-white">separately</strong> using standardized naming conventions.</p></div>
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">3</span><p class="text-sm" style="color:#cbd5e1;"><strong class="text-white">TrueType fonts</strong> required for plan sets: Arial, Times New Roman, Courier, Helvetica.</p></div>
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">4</span><p class="text-sm" style="color:#cbd5e1;">Avoid <strong class="text-white">red ink</strong> in any drawings or documents submitted for review.</p></div>
+          </div>
+        </div>
+      </div>
 
-    function copyEncKey() {
-      const key = document.getElementById('encryptionKey').value;
-      navigator.clipboard.writeText(key).then(() => {
-        const btn = document.getElementById('copyKeyBtn');
-        btn.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
-        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy'; }, 2000);
-      });
-    }
+      <div class="accordion-item glass rounded-2xl overflow-hidden">
+        <button class="accordion-trigger w-full flex items-center justify-between p-6 text-left" aria-expanded="false">
+          <div class="flex items-center gap-4">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;" aria-hidden="true"><i class="fas fa-clipboard-check"></i></div>
+            <span class="font-display font-bold text-white text-lg">Review &amp; Approval Process</span>
+          </div>
+          <i class="fas fa-chevron-down accordion-chevron flex-shrink-0 ml-4" style="color:#64748b;" aria-hidden="true"></i>
+        </button>
+        <div class="accordion-content" role="region">
+          <div class="px-6 pb-7 space-y-3">
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">1</span><p class="text-sm" style="color:#cbd5e1;">Submission reviewed <strong class="text-white">concurrently</strong> by relevant departments.</p></div>
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">2</span><p class="text-sm" style="color:#cbd5e1;">If revisions required, receive a <strong class="text-white">marked-up package</strong> with correction instructions.</p></div>
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">3</span><p class="text-sm" style="color:#cbd5e1;">After revisions, upload a <strong class="text-white">complete updated set</strong> for further review.</p></div>
+            <div class="glass rounded-xl p-4 flex items-start gap-4"><span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5" style="background:rgba(56,189,248,.15);color:#38bdf8;" aria-hidden="true">4</span><p class="text-sm" style="color:#cbd5e1;">Upon approval, contacted regarding <strong class="text-white">permit payment</strong>; final documents delivered via email.</p></div>
+          </div>
+        </div>
+      </div>
 
-    // ── Mobile menu ────────────────────────────────────────────
-    function toggleMobileMenu() {
-      document.getElementById('mobileMenu').classList.toggle('hidden');
-    }
-    function closeMobileMenu() {
-      document.getElementById('mobileMenu').classList.add('hidden');
-    }
+    </div>
+  </div>
+</section>
 
-    // ── Accordion ──────────────────────────────────────────────
-    document.querySelectorAll('.accordion-trigger').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const item   = btn.closest('.accordion-item');
-        const isOpen = item.classList.contains('open');
-        document.querySelectorAll('.accordion-item').forEach(i => i.classList.remove('open'));
-        if (!isOpen) item.classList.add('open');
-      });
-    });
+<!-- UPLOAD FORM -->
+<section id="upload" class="py-28 px-6 relative z-10" aria-labelledby="upload-heading">
+  <div class="max-w-3xl mx-auto">
+    <div class="text-center mb-14">
+      <p class="section-label mb-4">Upload</p>
+      <h2 id="upload-heading" class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Automated Plan Review</h2>
+      <p style="color:#94a3b8;">Upload your plan file with project details. Our rule engine checks IBC, ADA, and NFPA compliance and generates a scored report instantly. <em style="color:#64748b;">No data leaves your browser.</em></p>
+    </div>
+    <div class="glass rounded-3xl p-8 md:p-10">
+      <form id="uploadForm" novalidate aria-label="Plan upload and analysis form">
+        <div class="mb-9">
+          <h3 class="font-display font-bold text-white mb-6 flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;" aria-hidden="true"><i class="fas fa-info"></i></div>
+            Project Details
+          </h3>
+          <div class="grid md:grid-cols-2 gap-5">
+            <div>
+              <label for="buildingType" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Building / Infrastructure Type</label>
+              <select class="pe-input" id="buildingType" required aria-required="true">
+                <option value="">Select type...</option>
+                <option value="Residential">Residential</option>
+                <option value="Commercial">Commercial</option>
+                <option value="Industrial">Industrial</option>
+                <option value="Institutional">Institutional</option>
+                <option value="Infrastructure">Infrastructure</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="buildingCode" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Applicable Building Code</label>
+              <select class="pe-input" id="buildingCode" required aria-required="true">
+                <option value="">Select code...</option>
+                <option value="2024 IBC">2024 International Building Code (IBC)</option>
+                <option value="Local">Local Building Code</option>
+                <option value="Eurocode">European Building Code (Eurocode)</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label for="city" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">City</label>
+              <input type="text" class="pe-input" id="city" placeholder="e.g., Glendale" required aria-required="true" autocomplete="address-level2" />
+            </div>
+            <div>
+              <label for="state" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">State / Province</label>
+              <input type="text" class="pe-input" id="state" placeholder="e.g., Arizona" required aria-required="true" autocomplete="address-level1" />
+            </div>
+            <div class="md:col-span-2">
+              <label for="country" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Country</label>
+              <input type="text" class="pe-input" id="country" placeholder="e.g., United States" required aria-required="true" autocomplete="country-name" />
+            </div>
+          </div>
+        </div>
+        <div class="mb-8">
+          <h3 class="font-display font-bold text-white mb-4 flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;" aria-hidden="true"><i class="fas fa-upload"></i></div>
+            Plan File
+          </h3>
+          <label class="file-drop block" id="fileDrop" tabindex="0" role="button" aria-label="Upload plan file - drop here or click to browse">
+            <input type="file" id="planFile" accept=".docx,.dwg,.dxf,.pdf,.png,.jpg,.jpeg" required aria-required="true" aria-describedby="fileFormats" />
+            <div id="fileDropContent">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;" aria-hidden="true">
+                <i class="fas fa-cloud-upload-alt"></i>
+              </div>
+              <p class="text-white font-semibold mb-1">Drop your file here or click to browse</p>
+              <p class="text-sm" id="fileFormats" style="color:#7aa2b8;">Supported: <span style="color:#38bdf8;">.pdf &middot; .dxf &middot; .docx &middot; .dwg</span> &middot; images</p>
+            </div>
+            <div id="fileSelected" class="hidden">
+              <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3" style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);color:#34d399;" aria-hidden="true">
+                <i class="fas fa-file-check"></i>
+              </div>
+              <p class="font-semibold" id="fileNameDisplay" style="color:#34d399;">file.dxf</p>
+              <p class="text-xs mt-1" style="color:#64748b;">Click to change file</p>
+            </div>
+          </label>
+        </div>
+        <div id="uploadError" class="hidden mb-5 p-4 rounded-xl flex items-center gap-3 text-sm" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;" role="alert" aria-live="assertive">
+          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+          <span id="uploadErrorMsg"></span>
+        </div>
+        <button type="submit" class="btn-accent w-full justify-center text-base" style="padding:15px;">
+          <i class="fas fa-magnifying-glass text-sm" aria-hidden="true"></i> Analyze Plan
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
 
-    // ── File drop zone ─────────────────────────────────────────
-    const fileInput       = document.getElementById('planFile');
-    const fileDrop        = document.getElementById('fileDrop');
-    const fileDropContent = document.getElementById('fileDropContent');
-    const fileSelectedEl  = document.getElementById('fileSelected');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
+<!-- PRICING -->
+<section id="pricing" class="py-28 px-6 relative z-10" aria-labelledby="pricing-heading">
+  <div class="max-w-7xl mx-auto">
+    <div class="text-center mb-16">
+      <p class="section-label mb-4">Pricing</p>
+      <h2 id="pricing-heading" class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Simple, Transparent Pricing</h2>
+      <p class="max-w-xl mx-auto" style="color:#94a3b8;">Use the calculator to estimate your cost, then choose the tier that fits your project volume.</p>
+    </div>
+    <div class="glass glass-accent rounded-3xl p-8 max-w-2xl mx-auto mb-14">
+      <h3 class="font-display font-bold text-white text-xl mb-6 flex items-center gap-3">
+        <i class="fas fa-calculator" style="color:#38bdf8;" aria-hidden="true"></i> Pricing Calculator
+      </h3>
+      <div class="grid md:grid-cols-3 gap-5 mb-6">
+        <div>
+          <label for="numPlans" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Number of Plans</label>
+          <input type="number" class="pe-input" id="numPlans" min="1" value="1" />
+        </div>
+        <div>
+          <label for="propValue" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Property Value ($)</label>
+          <input type="number" class="pe-input" id="propValue" min="0" placeholder="e.g., 400000" />
+        </div>
+        <div>
+          <label for="projectSize" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Project Size (sq ft)</label>
+          <input type="number" class="pe-input" id="projectSize" min="0" placeholder="e.g., 1500" />
+        </div>
+      </div>
+      <button onclick="PE.App.calculatePrice()" class="btn-ghost w-full justify-center mb-5" style="font-size:.875rem;padding:12px;">
+        <i class="fas fa-calculator text-xs" aria-hidden="true"></i> Calculate Estimate
+      </button>
+      <div id="calcResult" class="hidden glass rounded-2xl p-5" aria-live="polite">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-xs uppercase tracking-wider mb-1" style="color:#64748b;">Estimated Total</div>
+            <div class="font-display font-bold text-white" style="font-size:2.5rem;" id="calcAmount">$0.00</div>
+            <div class="text-xs mt-1" style="color:#64748b;" id="calcBreakdown"></div>
+          </div>
+          <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8;" aria-hidden="true">
+            <i class="fas fa-receipt text-2xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="price-card" id="tierStarter">
+        <div class="text-xs font-mono font-bold uppercase tracking-widest mb-3" style="color:#64748b;">Starter</div>
+        <div class="flex items-baseline gap-1 mb-2"><span class="font-display font-bold text-white" style="font-size:3rem;">$0</span><span class="text-sm" style="color:#64748b;">/ month</span></div>
+        <p class="text-sm mb-6" style="color:#94a3b8;">Perfect for small firms. Up to 3 plans per month.</p>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin-bottom:1.5rem;" />
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Up to 3 plan reviews / month</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>IBC &amp; IRC code sets</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>PDF compliance reports</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#475569;"><i class="fas fa-times text-xs w-4" style="color:#334155;" aria-hidden="true"></i>API access</li>
+        </ul>
+        <a href="#subscribe" class="btn-ghost w-full justify-center" style="font-size:.875rem;padding:14px;">Get Started Free</a>
+      </div>
+      <div class="price-card featured" id="tierPro">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2"><span class="font-bold rounded-full whitespace-nowrap" style="background:#38bdf8;color:#030d1a;font-size:.7rem;padding:5px 16px;">Most Popular</span></div>
+        <div class="text-xs font-mono font-bold uppercase tracking-widest mb-3" style="color:#38bdf8;">Pro</div>
+        <div class="flex items-baseline gap-1 mb-2"><span class="font-display font-bold text-white" style="font-size:3rem;">$299</span><span class="text-sm" style="color:#64748b;">/ month</span></div>
+        <p class="text-sm mb-6" style="color:#94a3b8;">Optimized for active design firms. Up to 6 plans per month.</p>
+        <hr style="border:none;border-top:1px solid rgba(56,189,248,.2);margin-bottom:1.5rem;" />
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>4-6 plan reviews / month</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>All major code sets + ADA</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Revision tracking</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>REST API access</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Priority support</li>
+        </ul>
+        <a href="#subscribe" class="btn-accent w-full justify-center" style="font-size:.875rem;padding:14px;">Start Free Trial</a>
+      </div>
+      <div class="price-card" id="tierElite">
+        <div class="text-xs font-mono font-bold uppercase tracking-widest mb-3" style="color:#64748b;">Elite</div>
+        <div class="flex items-baseline gap-1 mb-2"><span class="font-display font-bold text-white" style="font-size:3rem;">Custom</span></div>
+        <p class="text-sm mb-6" style="color:#94a3b8;">High-volume submissions for municipalities and large firms.</p>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,.06);margin-bottom:1.5rem;" />
+        <ul class="space-y-3 mb-8">
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Unlimited reviews</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Custom code amendments</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Permit system integration</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>Dedicated account manager</li>
+          <li class="flex items-center gap-3 text-sm" style="color:#cbd5e1;"><i class="fas fa-check text-xs w-4" style="color:#34d399;" aria-hidden="true"></i>SLA guarantee</li>
+        </ul>
+        <a href="#subscribe" class="btn-ghost w-full justify-center" style="font-size:.875rem;padding:14px;">Contact Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
 
-    fileDrop.addEventListener('click', () => fileInput.click());
+<!-- SUBSCRIBE -->
+<section id="subscribe" class="py-28 px-6 relative z-10" aria-labelledby="subscribe-heading">
+  <div class="max-w-xl mx-auto">
+    <div class="text-center mb-12">
+      <p class="section-label mb-4">Subscribe</p>
+      <h2 id="subscribe-heading" class="font-display font-bold text-gradient mb-4" style="font-size:clamp(2rem,4vw,3rem);">Unlock Full Access</h2>
+      <p style="color:#94a3b8;">Submit a subscription inquiry to receive complete submission instructions and premium review features.</p>
+    </div>
+    <div class="glass rounded-3xl p-8 md:p-10">
+      <div class="grid grid-cols-3 gap-3 mb-8" role="radiogroup" aria-label="Subscription tier">
+        <label class="tier-label relative">
+          <input type="radio" name="subTier" value="Starter" aria-label="Starter tier" />
+          <div class="tier-box"><div class="text-xl mb-1" aria-hidden="true">&#127807;</div><div class="text-xs font-bold">Starter</div><div class="text-xs mt-1" style="color:#64748b;">1-3 plans</div></div>
+        </label>
+        <label class="tier-label relative">
+          <input type="radio" name="subTier" value="Pro" checked aria-label="Pro tier" />
+          <div class="tier-box" style="border-color:rgba(56,189,248,.45);background:rgba(56,189,248,.07);color:#38bdf8;"><div class="text-xl mb-1" aria-hidden="true">&#9889;</div><div class="text-xs font-bold">Pro</div><div class="text-xs mt-1" style="color:#7dd3fc;">4-6 plans</div></div>
+        </label>
+        <label class="tier-label relative">
+          <input type="radio" name="subTier" value="Elite" aria-label="Elite tier" />
+          <div class="tier-box"><div class="text-xl mb-1" aria-hidden="true">&#127970;</div><div class="text-xs font-bold">Elite</div><div class="text-xs mt-1" style="color:#64748b;">Unlimited</div></div>
+        </label>
+      </div>
+      <form id="subscribeForm" novalidate class="space-y-5">
+        <div>
+          <label for="subscriberName" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Name</label>
+          <input type="text" class="pe-input" id="subscriberName" placeholder="Full name" required autocomplete="name" />
+        </div>
+        <div>
+          <label for="subscriberEmail" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Email</label>
+          <input type="email" class="pe-input" id="subscriberEmail" placeholder="you@company.com" required autocomplete="email" />
+        </div>
+        <div class="glass rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider" style="color:#64748b;">Secure Inquiry Key</span>
+            <button type="button" id="copyKeyBtn" onclick="PE.App.copyEncKey()" class="text-xs font-semibold transition-colors" style="color:#38bdf8;" aria-label="Copy secure key">
+              <i class="fas fa-copy mr-1" aria-hidden="true"></i>Copy
+            </button>
+          </div>
+          <div class="font-mono text-xs break-all" style="color:#cbd5e1;" id="displayEncKey">Generating...</div>
+          <input type="hidden" id="encryptionKey" />
+        </div>
+        <p class="text-xs" style="color:#64748b;">Your inquiry will be forwarded to <span style="color:#38bdf8;font-weight:600;">PlanExaminer@dascient.com</span>.</p>
+        <div id="subscribeError" class="hidden p-4 rounded-xl flex items-center gap-3 text-sm" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);color:#f87171;" role="alert">
+          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+          <span id="subscribeErrorMsg"></span>
+        </div>
+        <button type="submit" class="btn-accent w-full justify-center text-base" style="padding:15px;">
+          <i class="fas fa-paper-plane text-sm" aria-hidden="true"></i> Submit Inquiry
+        </button>
+      </form>
+      <div id="subscribeResult" class="mt-5" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
 
-    fileInput.addEventListener('change', () => {
-      if (fileInput.files.length) {
-        fileDropContent.classList.add('hidden');
-        fileSelectedEl.classList.remove('hidden');
-        fileNameDisplay.textContent = fileInput.files[0].name;
-      }
-    });
+<!-- FOOTER -->
+<footer id="contact" class="relative z-10 mt-4" role="contentinfo">
+  <div class="glass mx-4 md:mx-8 rounded-t-3xl pt-20 pb-10 px-8 lg:px-16 overflow-hidden" style="border-bottom:none;">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+      <div class="lg:col-span-1">
+        <div class="flex items-center gap-2.5 mb-5">
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.3);" aria-hidden="true"><i class="fas fa-file-circle-check text-sm" style="color:#38bdf8;"></i></div>
+          <span class="font-display font-bold text-lg text-white">Plan<span class="text-accent-gradient">Examiner</span></span>
+        </div>
+        <p class="text-sm leading-relaxed mb-6 max-w-xs" style="color:#7aa2b8;">AI-powered building plan review and code compliance. Faster approvals, fewer revisions, full audit trail.</p>
+        <div class="flex gap-3">
+          <a href="https://github.com/DaScient/Plan-Examiner" class="w-9 h-9 rounded-xl glass flex items-center justify-center text-sm transition-all" style="color:#64748b;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#64748b'" aria-label="Plan-Examiner on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
+          <a href="#" class="w-9 h-9 rounded-xl glass flex items-center justify-center text-sm transition-all" style="color:#64748b;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#64748b'" aria-label="Follow on X"><i class="fab fa-x-twitter" aria-hidden="true"></i></a>
+          <a href="#" class="w-9 h-9 rounded-xl glass flex items-center justify-center text-sm transition-all" style="color:#64748b;" onmouseover="this.style.color='#38bdf8'" onmouseout="this.style.color='#64748b'" aria-label="Connect on LinkedIn"><i class="fab fa-linkedin-in" aria-hidden="true"></i></a>
+        </div>
+      </div>
+      <nav aria-label="Platform links">
+        <h4 class="font-display font-bold text-xs uppercase tracking-widest mb-6 text-white">Platform</h4>
+        <ul class="space-y-3 text-sm" style="color:#64748b;">
+          <li><a href="#about" class="hover:text-white transition-colors">Residential Engine</a></li>
+          <li><a href="#about" class="hover:text-white transition-colors">Commercial Suite</a></li>
+          <li><a href="#guidelines" class="hover:text-white transition-colors">Submission Guidelines</a></li>
+          <li><a href="#pricing" class="hover:text-white transition-colors">Pricing &amp; Tiers</a></li>
+        </ul>
+      </nav>
+      <nav aria-label="Resource links">
+        <h4 class="font-display font-bold text-xs uppercase tracking-widest mb-6 text-white">Resources</h4>
+        <ul class="space-y-3 text-sm" style="color:#64748b;">
+          <li><a href="https://github.com/DaScient/Plan-Examiner/blob/main/README.md" class="hover:text-white transition-colors">Documentation</a></li>
+          <li><a href="https://github.com/DaScient/Plan-Examiner/blob/main/CONTRIBUTING.md" class="hover:text-white transition-colors">Contributing</a></li>
+          <li><a href="https://github.com/DaScient/Plan-Examiner/blob/main/assets/data/rules/index.json" class="hover:text-white transition-colors">Rule Pack Registry</a></li>
+          <li><a href="https://github.com/DaScient/Plan-Examiner/blob/main/SECURITY.md" class="hover:text-white transition-colors">Security Policy</a></li>
+        </ul>
+      </nav>
+      <address>
+        <h4 class="font-display font-bold text-xs uppercase tracking-widest mb-6 text-white">Connect</h4>
+        <ul class="space-y-4 text-sm" style="color:#64748b;">
+          <li class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl glass flex items-center justify-center text-xs flex-shrink-0" style="color:#38bdf8;" aria-hidden="true"><i class="fas fa-phone"></i></div><a href="tel:6238500991" class="font-mono hover:text-white transition-colors">623-850-0991</a></li>
+          <li class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl glass flex items-center justify-center text-xs flex-shrink-0" style="color:#38bdf8;" aria-hidden="true"><i class="fas fa-envelope"></i></div><a href="mailto:PlanExaminer@dascient.com" class="font-mono hover:text-white transition-colors" style="font-size:.75rem;">PlanExaminer@dascient.com</a></li>
+          <li class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl glass flex items-center justify-center text-xs flex-shrink-0" style="color:#38bdf8;" aria-hidden="true"><i class="fas fa-map-marker-alt"></i></div><span>Glendale, Arizona</span></li>
+        </ul>
+      </address>
+    </div>
+    <div class="max-w-7xl mx-auto pt-8 flex flex-col sm:flex-row justify-between items-center gap-4" style="border-top:1px solid rgba(255,255,255,.05);">
+      <p class="font-mono" style="font-size:.75rem;color:#334155;">&copy; 2026 Plan-Examiner &middot; DaScient. All rights reserved.</p>
+      <div class="flex gap-6 font-mono" style="font-size:.75rem;color:#334155;">
+        <a href="#" class="hover:text-white transition-colors">Privacy</a>
+        <a href="https://github.com/DaScient/Plan-Examiner/blob/main/SECURITY.md" class="hover:text-white transition-colors">Security</a>
+        <a href="https://github.com/DaScient/Plan-Examiner/blob/main/LICENSE" class="hover:text-white transition-colors">License</a>
+      </div>
+    </div>
+  </div>
+</footer>
+</main>
 
-    fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('drag-over'); });
-    fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('drag-over'));
-    fileDrop.addEventListener('drop', e => {
-      e.preventDefault();
-      fileDrop.classList.remove('drag-over');
-      if (e.dataTransfer.files.length) {
-        const dt = new DataTransfer();
-        dt.items.add(e.dataTransfer.files[0]);
-        fileInput.files = dt.files;
-        fileInput.dispatchEvent(new Event('change'));
-      }
-    });
+<!-- PLAN REVIEW MODAL -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-label="Plan Review">
+  <div class="modal-box">
+    <div class="flex items-center justify-between p-6" style="border-bottom:1px solid rgba(255,255,255,.05);">
+      <h2 class="font-display font-bold text-white text-lg flex items-center gap-3">
+        <i class="fas fa-microscope" style="color:#38bdf8;" aria-hidden="true"></i> Plan Review
+      </h2>
+      <button onclick="PE.App.closeModal()" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-sm transition-colors" style="color:#64748b;" aria-label="Close dialog">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="flex gap-1 px-6 pt-4 overflow-x-auto" role="tablist">
+      <button class="tab-btn" data-tab="pipeline" onclick="PE.App.switchTab('pipeline')" role="tab" aria-selected="false"><i class="fas fa-diagram-project mr-1.5 text-xs" aria-hidden="true"></i>Pipeline</button>
+      <button class="tab-btn" data-tab="preview" onclick="PE.App.switchTab('preview')" role="tab" aria-selected="false"><i class="fas fa-eye mr-1.5 text-xs" aria-hidden="true"></i>Preview</button>
+      <button class="tab-btn active" data-tab="analysis" onclick="PE.App.switchTab('analysis')" role="tab" aria-selected="true"><i class="fas fa-chart-bar mr-1.5 text-xs" aria-hidden="true"></i>Analysis</button>
+      <button class="tab-btn" data-tab="chat" onclick="PE.App.switchTab('chat')" role="tab" aria-selected="false"><i class="fas fa-comments mr-1.5 text-xs" aria-hidden="true"></i>Ask AI</button>
+      <button class="tab-btn" data-tab="history" onclick="PE.App.switchTab('history')" role="tab" aria-selected="false"><i class="fas fa-clock-rotate-left mr-1.5 text-xs" aria-hidden="true"></i>History</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-pane" id="tabPipeline" role="tabpanel">
+        <div class="glass glass-accent rounded-2xl p-5 mb-4">
+          <p class="text-xs font-semibold uppercase tracking-wider mb-1" style="color:#38bdf8;">Agent Pipeline</p>
+          <p class="text-xs" style="color:#64748b;">Live 7-step review process - each step exposes its inputs and outputs.</p>
+        </div>
+        <div id="pipelineSteps" aria-live="polite">
+          <p class="text-center py-8 text-sm" style="color:#475569;">Upload a plan file to watch the pipeline run.</p>
+        </div>
+      </div>
+      <div class="tab-pane" id="tabPreview" role="tabpanel">
+        <div id="previewContainer" class="glass rounded-2xl p-6 text-sm overflow-auto" style="max-height:420px;color:#94a3b8;min-height:120px;">
+          <p class="text-center py-8" style="color:#475569;">Plan preview will appear here after upload.</p>
+        </div>
+      </div>
+      <div class="tab-pane active" id="tabAnalysis" role="tabpanel" aria-live="polite">
+        <div id="analysisContent">
+          <p class="text-center py-8" style="color:#475569;">Run a plan upload to see analysis results.</p>
+        </div>
+        <div class="mt-6 glass glass-accent rounded-2xl p-5 text-center">
+          <p class="text-sm font-semibold mb-3" style="color:#38bdf8;">
+            <i class="fas fa-lock mr-2" aria-hidden="true"></i>Subscribe for the complete review with official correction letter and redline overlay.
+          </p>
+          <a href="#subscribe" onclick="PE.App.closeModal()" class="btn-accent" style="font-size:.875rem;padding:10px 24px;">Subscribe Now</a>
+        </div>
+      </div>
+      <div class="tab-pane" id="tabChat" role="tabpanel">
+        <div class="glass glass-accent rounded-2xl p-4 mb-4">
+          <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-robot mr-1.5" style="color:#38bdf8;" aria-hidden="true"></i><strong class="text-white">Ask the Reviewer</strong> - scoped to the current plan analysis. Configure your API key in AI Settings to enable.</p>
+        </div>
+        <div id="chatMessages" role="log" aria-live="polite" style="background:rgba(255,255,255,.01);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:12px;height:240px;overflow-y:auto;">
+          <p class="text-xs text-center" style="color:#475569;padding:24px 0;">Ask questions about the current plan review, e.g.: "Why did the ADA check fail?" or "Draft a correction letter."</p>
+        </div>
+        <form id="chatForm" class="mt-3 flex gap-2">
+          <input type="text" id="chatInput" class="pe-input flex-1" placeholder="Ask about compliance findings..." autocomplete="off" aria-label="Chat message" />
+          <button type="submit" class="btn-accent" style="padding:11px 18px;flex-shrink:0;" aria-label="Send"><i class="fas fa-paper-plane text-xs" aria-hidden="true"></i></button>
+        </form>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button onclick="document.getElementById('chatInput').value='Why did the ADA turning space check fail?'" class="text-xs px-3 py-1.5 rounded-lg border" style="color:#64748b;border-color:rgba(255,255,255,.07);background:rgba(255,255,255,.02);">ADA turning space?</button>
+          <button onclick="document.getElementById('chatInput').value='Draft a formal correction letter for all flagged items.'" class="text-xs px-3 py-1.5 rounded-lg border" style="color:#64748b;border-color:rgba(255,255,255,.07);background:rgba(255,255,255,.02);">Draft correction letter</button>
+          <button onclick="document.getElementById('chatInput').value='What is the IBC citation for egress width?'" class="text-xs px-3 py-1.5 rounded-lg border" style="color:#64748b;border-color:rgba(255,255,255,.07);background:rgba(255,255,255,.02);">IBC egress citation?</button>
+        </div>
+      </div>
+      <div class="tab-pane" id="tabHistory" role="tabpanel">
+        <div class="glass glass-accent rounded-2xl p-4 mb-4">
+          <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-database mr-1.5" style="color:#38bdf8;" aria-hidden="true"></i>Last 10 reviews stored locally in your browser (IndexedDB). No data is sent to any server.</p>
+        </div>
+        <div id="historyList" aria-live="polite"><p class="text-center py-8 text-sm" style="color:#475569;">Loading history...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
 
-    // ── Pricing calculator ─────────────────────────────────────
-    function calculatePrice() {
-      const numPlans    = parseInt(document.getElementById('numPlans').value)    || 1;
-      const propValue   = parseFloat(document.getElementById('propValue').value) || 0;
-      const projectSize = parseFloat(document.getElementById('projectSize').value) || 0;
+<!-- AI SETTINGS MODAL -->
+<div class="modal-overlay" id="aiModalOverlay" role="dialog" aria-modal="true" aria-label="AI Settings">
+  <div class="modal-box" style="max-width:540px;">
+    <div class="flex items-center justify-between p-6" style="border-bottom:1px solid rgba(255,255,255,.05);">
+      <h2 class="font-display font-bold text-white text-lg flex items-center gap-3">
+        <i class="fas fa-key" style="color:#38bdf8;" aria-hidden="true"></i> AI Settings
+      </h2>
+      <button onclick="PE.App.closeAIModal()" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-sm" style="color:#64748b;" aria-label="Close">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="p-6">
+      <div class="glass glass-accent rounded-xl p-4 mb-6">
+        <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-shield-halved mr-1.5" style="color:#34d399;" aria-hidden="true"></i><strong class="text-white">Privacy:</strong> Your API key is stored only in your browser's localStorage. It is never sent to Plan-Examiner servers.</p>
+      </div>
+      <form id="aiSettingsForm" class="space-y-4">
+        <div>
+          <label for="llmProvider" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Provider</label>
+          <select id="llmProvider" class="pe-input">
+            <option value="openai">OpenAI (GPT-4o, GPT-4o-mini...)</option>
+            <option value="anthropic">Anthropic (Claude 3 Haiku, Sonnet...)</option>
+            <option value="azure">Azure OpenAI</option>
+            <option value="ollama">Ollama (local, no key needed)</option>
+          </select>
+        </div>
+        <div>
+          <label for="llmApiKey" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">API Key <span style="color:#475569;">(not required for Ollama)</span></label>
+          <input type="password" id="llmApiKey" class="pe-input" placeholder="sk-..." autocomplete="off" />
+          <p class="text-xs mt-1" style="color:#475569;">Stored only in localStorage - never transmitted to Plan-Examiner.</p>
+        </div>
+        <div>
+          <label for="llmModel" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Model <span style="color:#475569;">(optional)</span></label>
+          <input type="text" id="llmModel" class="pe-input" placeholder="gpt-4o-mini" />
+        </div>
+        <div>
+          <label for="llmBaseUrl" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Base URL <span style="color:#475569;">(Azure / Ollama only)</span></label>
+          <input type="url" id="llmBaseUrl" class="pe-input" placeholder="https://api.openai.com/v1" />
+        </div>
+        <p id="aiSaveStatus" class="text-xs" style="color:#64748b;min-height:1em;"></p>
+        <div class="flex gap-3">
+          <button type="submit" class="btn-accent flex-1 justify-center" style="padding:12px;"><i class="fas fa-floppy-disk text-xs" aria-hidden="true"></i> Save Configuration</button>
+          <button type="button" id="clearLLMBtn" class="btn-ghost" style="padding:12px 20px;" aria-label="Clear configuration"><i class="fas fa-trash-can text-xs" aria-hidden="true"></i></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
-      const baseCost  = 30;
-      const surcharge = (propValue / 100000) * 15;
-      const extra     = projectSize > 2000 ? 15 : 0;
-      const perPlan   = baseCost + surcharge + extra;
-      const total     = perPlan * numPlans;
+<!-- COMMAND PALETTE -->
+<div id="paletteOverlay" role="dialog" aria-modal="true" aria-label="Command palette">
+  <div id="paletteBox">
+    <input id="paletteInput" type="text" placeholder="Search commands..." autocomplete="off" aria-label="Search commands" />
+    <div id="paletteList" role="listbox"></div>
+    <div style="padding:8px 16px;border-top:1px solid rgba(255,255,255,.05);font-size:.7rem;color:#334155;">
+      <kbd style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:3px;">Enter</kbd> select &middot;
+      <kbd style="background:rgba(255,255,255,.07);padding:2px 6px;border-radius:3px;">Esc</kbd> close
+    </div>
+  </div>
+</div>
 
-      document.getElementById('calcAmount').textContent = '$' + total.toFixed(2);
-      document.getElementById('calcBreakdown').textContent =
-        '$' + perPlan.toFixed(2) + ' per plan × ' + numPlans + ' plan' + (numPlans !== 1 ? 's' : '') +
-        (surcharge > 0 ? ' · +$' + surcharge.toFixed(2) + ' property surcharge' : '') +
-        (extra > 0 ? ' · +$' + extra.toFixed(2) + ' large-project fee' : '');
-      document.getElementById('calcResult').classList.remove('hidden');
+<!-- SHORTCUTS OVERLAY -->
+<div id="shortcutsOverlay" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onclick="this.classList.remove('active')">
+  <div class="glass rounded-2xl p-8 max-w-sm w-full" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="font-display font-bold text-white text-lg">Keyboard Shortcuts</h3>
+      <button onclick="PE.App.showShortcutsHelp()" class="w-8 h-8 rounded-xl glass flex items-center justify-center text-sm" style="color:#64748b;" aria-label="Close"><i class="fas fa-times" aria-hidden="true"></i></button>
+    </div>
+    <dl class="space-y-3 text-sm">
+      <div class="flex items-center justify-between"><dt style="color:#94a3b8;">Command palette</dt><dd><kbd class="font-mono text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.08);color:#e2e8f0;">Ctrl+K</kbd></dd></div>
+      <div class="flex items-center justify-between"><dt style="color:#94a3b8;">Go to upload</dt><dd><kbd class="font-mono text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.08);color:#e2e8f0;">U</kbd></dd></div>
+      <div class="flex items-center justify-between"><dt style="color:#94a3b8;">View analysis</dt><dd><kbd class="font-mono text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.08);color:#e2e8f0;">R</kbd></dd></div>
+      <div class="flex items-center justify-between"><dt style="color:#94a3b8;">Export report</dt><dd><kbd class="font-mono text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.08);color:#e2e8f0;">E</kbd></dd></div>
+      <div class="flex items-center justify-between"><dt style="color:#94a3b8;">Show shortcuts</dt><dd><kbd class="font-mono text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.08);color:#e2e8f0;">?</kbd></dd></div>
+      <div class="flex items-center justify-between"><dt style="color:#94a3b8;">Close / Dismiss</dt><dd><kbd class="font-mono text-xs px-2 py-1 rounded" style="background:rgba(255,255,255,.08);color:#e2e8f0;">Esc</kbd></dd></div>
+    </dl>
+  </div>
+</div>
 
-      // Highlight recommended tier
-      ['tierStarter','tierPro','tierElite'].forEach(id => document.getElementById(id).classList.remove('ring-highlight'));
-      if      (numPlans <= 3) document.getElementById('tierStarter').classList.add('ring-highlight');
-      else if (numPlans <= 6) document.getElementById('tierPro').classList.add('ring-highlight');
-      else                    document.getElementById('tierElite').classList.add('ring-highlight');
-    }
+<!-- SCRIPTS -->
+<!-- SRI hashes must be added for production. Compute with:
+     cat mammoth.browser.min.js | openssl dgst -sha384 -binary | openssl base64 -A -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- SRI hashes must be added for production. Compute with:
+     cat pdf.min.js | openssl dgst -sha384 -binary | openssl base64 -A -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }</script>
+<script src="assets/js/agent/rule-engine.js"></script>
+<script src="assets/js/agent/extractors.js"></script>
+<script src="assets/js/agent/llm-bridge.js"></script>
+<script src="assets/js/agent/pipeline.js"></script>
+<script src="assets/js/utils/history.js"></script>
+<script src="assets/js/utils/export.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  var container = document.getElementById('pipelineSteps');
+  if (!container || !window.PE || !PE.Pipeline) return;
+  container.innerHTML = '';
+  PE.Pipeline.STEPS.forEach(function (step) {
+    var div = document.createElement('div');
+    div.className = 'pipeline-step pending';
+    div.id = 'step-' + step.id;
+    div.innerHTML = '<div class="step-icon"><i class="fas ' + step.icon + '"></i></div>' +
+      '<div style="flex:1;"><div class="step-label">' + step.label + '</div>' +
+      '<div class="step-desc">' + step.desc + '</div>' +
+      '<div class="step-detail"></div></div>';
+    container.appendChild(div);
+  });
+}());
+</script>
 
-    function autoCalc() {
-      if (!document.getElementById('calcResult').classList.contains('hidden')) calculatePrice();
-    }
-
-    // ── Upload form ────────────────────────────────────────────
-    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const errBox = document.getElementById('uploadError');
-      const errMsg = document.getElementById('uploadErrorMsg');
-      errBox.classList.add('hidden');
-
-      const buildingType = document.getElementById('buildingType').value;
-      const buildingCode = document.getElementById('buildingCode').value;
-      const city         = document.getElementById('city').value.trim();
-      const state        = document.getElementById('state').value.trim();
-      const country      = document.getElementById('country').value.trim();
-
-      if (!buildingType || !buildingCode || !city || !state || !country) {
-        errMsg.textContent = 'Please fill in all project details before analyzing.';
-        errBox.classList.remove('hidden'); return;
-      }
-      if (!fileInput.files.length) {
-        errMsg.textContent = 'Please select a .docx or .dwg file.';
-        errBox.classList.remove('hidden'); return;
-      }
-
-      const file     = fileInput.files[0];
-      const fileName = file.name.toLowerCase();
-
-      try {
-        // Client-side preview
-        if (fileName.endsWith('.docx') && typeof mammoth !== 'undefined') {
-          const buf    = await file.arrayBuffer();
-          const result = await mammoth.convertToHtml({ arrayBuffer: buf });
-          document.getElementById('previewContainer').innerHTML =
-            '<div style="color:#cbd5e1;font-size:.875rem;line-height:1.7;">' + result.value + '</div>';
-        } else if (fileName.endsWith('.dwg')) {
-          document.getElementById('previewContainer').innerHTML =
-            '<div style="text-align:center;padding:48px 24px;">' +
-            '<i class="fas fa-drafting-compass" style="font-size:2.5rem;color:#38bdf8;display:block;margin-bottom:16px;"></i>' +
-            '<p style="font-weight:600;color:#fff;margin-bottom:8px;">DWG file received: ' + file.name + '</p>' +
-            '<p style="font-size:.875rem;color:#64748b;">Native DWG rendering requires the full engine. Your file will be fully processed upon subscription.</p></div>';
-        } else {
-          document.getElementById('previewContainer').innerHTML =
-            '<p style="text-align:center;padding:48px;color:#64748b;">Preview not available for this file type.</p>';
-        }
-
-        // Simulated compliance analysis
-        const score  = Math.floor(72 + Math.random() * 25);
-        const checks = [
-          { label: 'Egress Width Analysis',     status: 'PASS',
-            s: 'color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);' },
-          { label: 'Fire Separation Distance',  status: 'PASS',
-            s: 'color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);' },
-          { label: 'Stair Tread / Riser Ratio', status: 'REVIEW',
-            s: 'color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);' },
-          { label: 'ADA Turning Radius',        status: 'FLAGGED',
-            s: 'color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);' },
-          { label: 'Occupancy Load Calculation',status: score > 88 ? 'PASS' : 'FLAGGED',
-            s: score > 88
-              ? 'color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);'
-              : 'color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);' },
-        ];
-
-        const rows = checks.map(c =>
-          '<div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">' +
-          '<span style="font-size:.875rem;color:#cbd5e1;">' + c.label + '</span>' +
-          '<span style="font-size:.65rem;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:.08em;' + c.s + '">' + c.status + '</span>' +
-          '</div>'
-        ).join('');
-
-        document.getElementById('analysisContent').innerHTML =
-          '<div style="background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.18);border-radius:16px;padding:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
-          '<div><div style="font-size:.7rem;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.1em;">Compliance Score</div>' +
-          '<div style="font-size:2.8rem;font-weight:700;color:#fff;font-family:\'Space Grotesk\',sans-serif;">' + score + '%</div></div>' +
-          '<div style="text-align:right;font-size:.75rem;color:#64748b;">' +
-          '<div><span style="color:#fff;font-weight:600;">' + buildingType + '</span></div>' +
-          '<div>' + buildingCode + '</div><div>' + city + ', ' + state + '</div></div></div>' +
-          '<div style="display:flex;flex-direction:column;gap:8px;">' + rows + '</div>' +
-          '<p style="font-size:.75rem;color:#64748b;margin-top:12px;">* Preview only. Subscribe for complete code citations, correction letters, and redline overlay.</p>';
-
-        openModal();
-        switchTab('analysis');
-      } catch (err) {
-        console.error(err);
-        errMsg.textContent = 'An error occurred processing your file. Please try again.';
-        errBox.classList.remove('hidden');
-      }
-    });
-
-    // ── Subscribe form ──────────────────────────────────────────
-    document.getElementById('subscribeForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const errBox = document.getElementById('subscribeError');
-      const errMsg = document.getElementById('subscribeErrorMsg');
-      errBox.classList.add('hidden');
-
-      const name  = document.getElementById('subscriberName').value.trim();
-      const email = document.getElementById('subscriberEmail').value.trim();
-      const tier  = (document.querySelector('input[name="subTier"]:checked') || {}).value;
-
-      if (!name || !email) {
-        errMsg.textContent = 'Please enter your name and email address.';
-        errBox.classList.remove('hidden'); return;
-      }
-      if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-        errMsg.textContent = 'Please enter a valid email address.';
-        errBox.classList.remove('hidden'); return;
-      }
-
-      // Simulate async inquiry submission
-      await new Promise(r => setTimeout(r, 800));
-      console.log('Subscription inquiry → PlanExaminer@dascient.com', { name, email, tier, key: document.getElementById('encryptionKey').value });
-
-      document.getElementById('subscribeResult').innerHTML =
-        '<div style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:16px;padding:20px;display:flex;align-items:flex-start;gap:16px;margin-top:8px;">' +
-        '<div style="width:40px;height:40px;border-radius:12px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);display:flex;align-items:center;justify-content:center;color:#34d399;flex-shrink:0;">' +
-        '<i class="fas fa-check"></i></div>' +
-        '<div><p style="font-weight:700;color:#fff;margin-bottom:4px;">Inquiry Received!</p>' +
-        '<p style="font-size:.875rem;color:#94a3b8;">Thank you, <strong style="color:#fff;">' + name + '</strong>. Your <strong style="color:#38bdf8;">' + (tier || 'Pro') + '</strong> inquiry has been forwarded. We\'ll be in touch at <strong style="color:#fff;">' + email + '</strong>.</p></div></div>';
-
-      document.getElementById('subscribeForm').reset();
-    });
-
-    // ── Modal ───────────────────────────────────────────────────
-    function openModal() {
-      document.getElementById('modalOverlay').classList.add('active');
-      document.body.style.overflow = 'hidden';
-    }
-    function closeModal() {
-      document.getElementById('modalOverlay').classList.remove('active');
-      document.body.style.overflow = '';
-    }
-    document.getElementById('modalOverlay').addEventListener('click', function(e) {
-      if (e.target === this) closeModal();
-    });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-
-    function switchTab(name) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
-      const idMap = { preview: 'tabPreview', analysis: 'tabAnalysis' };
-      document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === idMap[name]));
-    }
-
-    // ── Tier radio visual sync ──────────────────────────────────
-    const subTierRadios = document.querySelectorAll('input[name="subTier"]');
-    subTierRadios.forEach(radio => {
-      radio.addEventListener('change', () => {
-        subTierRadios.forEach(r => {
-          const box = r.nextElementSibling;
-          if (r.checked) {
-            box.style.borderColor = 'rgba(56,189,248,.45)';
-            box.style.background  = 'rgba(56,189,248,.07)';
-            box.style.color       = '#38bdf8';
-          } else {
-            box.style.borderColor = 'rgba(255,255,255,.1)';
-            box.style.background  = 'rgba(255,255,255,.025)';
-            box.style.color       = '#64748b';
-          }
-          const sub = box.querySelector('div:last-child');
-          if (sub) sub.style.color = r.checked ? '#7dd3fc' : '#64748b';
-        });
-      });
-    });
-
-  </script>
 </body>
 </html>
