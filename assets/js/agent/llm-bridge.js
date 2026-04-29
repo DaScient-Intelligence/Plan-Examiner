@@ -33,6 +33,11 @@ PE.LLM = (function () {
   }
 
   function setConfig(cfg) {
+    // Intentional clear-text storage in localStorage: the BYO-key design
+    // requires the user's API key to be accessible client-side for LLM calls.
+    // Keys are never sent to Plan-Examiner servers — only to the user's chosen
+    // LLM provider. Users are warned of this in the AI Settings UI.
+    // eslint-disable-next-line no-restricted-globals
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
   }
 

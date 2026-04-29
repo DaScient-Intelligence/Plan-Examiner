@@ -69,12 +69,15 @@ PE.Export = (function () {
       ].join('\n');
     }).join('\n');
 
-    var summaryHtml = (summary || '')
+    // Escape the summary text first, then apply safe markdown-to-HTML transformations.
+    // This prevents XSS from untrusted LLM output: any <script> or HTML in the
+    // raw summary becomes &lt;script&gt; after _esc() and is never executed.
+    var summaryHtml = _esc(summary || '')
       .replace(/^##\s+(.+)$/gm, '<h2 style="font-size:15px;margin:16px 0 8px;color:#1e293b;">$1</h2>')
       .replace(/^###\s+(.+)$/gm,'<h3 style="font-size:13px;margin:12px 0 6px;color:#1e293b;">$1</h3>')
       .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
       .replace(/^-\s+(.+)$/gm, '<li style="font-size:12px;color:#475569;margin-bottom:4px;">$1</li>')
-      .replace(/(<li[^>]*>.*<\/li>\n?)+/gs, '<ul style="margin:8px 0 8px 20px;">$&</ul>')
+      .replace(/(&lt;li[^&].*?&lt;\/li&gt;\n?)+/g, '<ul style="margin:8px 0 8px 20px;">$&</ul>')
       .replace(/\n/g,'<br>');
 
     return `<!DOCTYPE html>
@@ -167,14 +170,20 @@ PE.Export = (function () {
 
   /**
    * Open the compliance report in a new tab and prompt to print/save as PDF.
+   * Uses a Blob URL to avoid document.write (which is a XSS vector).
    */
   function printReport(data) {
     var html = buildReportHtml(data);
-    var win  = window.open('', '_blank');
-    if (!win) { alert('Pop-up blocked. Please allow pop-ups for this site.'); return; }
-    win.document.write(html);
-    win.document.close();
-    setTimeout(function () { win.print(); }, 600);
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var win  = window.open(url, '_blank');
+    if (!win) {
+      URL.revokeObjectURL(url);
+      alert('Pop-up blocked. Please allow pop-ups for this site.');
+      return;
+    }
+    // Revoke object URL after a delay to free memory while still allowing print
+    setTimeout(function () { URL.revokeObjectURL(url); win.print(); }, 800);
   }
 
   /**
