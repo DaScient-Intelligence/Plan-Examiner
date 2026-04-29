@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "packs": [
+    {
+      "id": "ibc-2021",
+      "name": "IBC 2021",
+      "file": "ibc-2021.json",
+      "description": "International Building Code 2021 – primary commercial and residential code for most US jurisdictions",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 1
+    },
+    {
+      "id": "ada-2010",
+      "name": "ADA 2010",
+      "file": "ada-2010.json",
+      "description": "ADA Standards for Accessible Design 2010 – federally mandated accessibility requirements",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 2
+    },
+    {
+      "id": "nfpa-101",
+      "name": "NFPA 101",
+      "file": "nfpa-101.json",
+      "description": "NFPA 101 Life Safety Code 2021 – egress, fire protection, and life safety",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 3
+    }
+  ]
+}

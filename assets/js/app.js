@@ -1,0 +1,823 @@
+/**
+ * Plan-Examiner Main App
+ * UI controller that wires together pipeline, LLM, history, and export modules.
+ */
+
+var PE = window.PE || {};
+
+PE.App = (function () {
+  'use strict';
+
+  // ── State ─────────────────────────────────────────────────────────────
+  var _currentResult = null;
+  var _currentFile   = null;
+  var _chatHistory   = [];
+  var _chatContext   = null;
+  var _chatAbort     = null;
+
+  // ── DOM refs (populated in init) ────────────────────────────────────
+  var $;
+
+  // ── Init ─────────────────────────────────────────────────────────────
+  function init() {
+    $ = function (sel, ctx) { return (ctx || document).querySelector(sel); };
+    $.all = function (sel, ctx) { return Array.from((ctx || document).querySelectorAll(sel)); };
+
+    _initEncKey();
+    _initNav();
+    _initAccordion();
+    _initFileDrop();
+    _initUploadForm();
+    _initSubscribeForm();
+    _initPricingCalc();
+    _initModal();
+    _initAISettings();
+    _initChat();
+    _initKeyboardShortcuts();
+    _initCommandPalette();
+    _initHistoryTab();
+    _registerSW();
+  }
+
+  // ── Encryption key ────────────────────────────────────────────────────
+  function _initEncKey() {
+    var arr = new Uint8Array(16);
+    window.crypto.getRandomValues(arr);
+    var key = Array.from(arr, function (b) { return ('00' + b.toString(16)).slice(-2); }).join('');
+    var keyInput = document.getElementById('encryptionKey');
+    var keyDisp  = document.getElementById('displayEncKey');
+    if (keyInput) keyInput.value = key;
+    if (keyDisp)  keyDisp.textContent = key;
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────
+  function _initNav() {
+    // Mobile menu toggle
+    var btn = document.getElementById('mobileMenuBtn');
+    var menu = document.getElementById('mobileMenu');
+    if (btn) btn.addEventListener('click', function () { menu && menu.classList.toggle('hidden'); });
+
+    // Close mobile menu on link click
+    $.all('#mobileMenu a').forEach(function (a) {
+      a.addEventListener('click', function () { menu && menu.classList.add('hidden'); });
+    });
+
+    // LLM config badge on nav
+    _updateLLMBadge();
+  }
+
+  function _updateLLMBadge() {
+    var badge = document.getElementById('llmBadge');
+    if (!badge) return;
+    if (PE.LLM && PE.LLM.isConfigured()) {
+      var cfg = PE.LLM.getConfig();
+      badge.textContent = cfg.provider + ':' + cfg.model.split('-').slice(0,2).join('-');
+      badge.style.background = 'rgba(52,211,153,.1)';
+      badge.style.borderColor = 'rgba(52,211,153,.3)';
+      badge.style.color = '#34d399';
+    } else {
+      badge.textContent = 'AI: Not configured';
+      badge.style.background = 'rgba(255,255,255,.04)';
+      badge.style.borderColor = 'rgba(255,255,255,.1)';
+      badge.style.color = '#64748b';
+    }
+  }
+
+  // ── Accordion ─────────────────────────────────────────────────────────
+  function _initAccordion() {
+    $.all('.accordion-trigger').forEach(function (btn) {
+      // a11y
+      btn.setAttribute('aria-expanded', 'false');
+      var content = btn.closest('.accordion-item').querySelector('.accordion-content');
+      if (content) {
+        var id = 'acc-' + Math.random().toString(36).slice(2);
+        content.id = id;
+        btn.setAttribute('aria-controls', id);
+      }
+
+      btn.addEventListener('click', function () {
+        var item   = btn.closest('.accordion-item');
+        var isOpen = item.classList.contains('open');
+        $.all('.accordion-item').forEach(function (i) {
+          i.classList.remove('open');
+          var t = i.querySelector('.accordion-trigger');
+          if (t) t.setAttribute('aria-expanded', 'false');
+        });
+        if (!isOpen) {
+          item.classList.add('open');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+  }
+
+  // ── File drop zone ────────────────────────────────────────────────────
+  function _initFileDrop() {
+    var fileInput       = document.getElementById('planFile');
+    var fileDrop        = document.getElementById('fileDrop');
+    var fileDropContent = document.getElementById('fileDropContent');
+    var fileSelectedEl  = document.getElementById('fileSelected');
+    var fileNameDisplay = document.getElementById('fileNameDisplay');
+    if (!fileDrop) return;
+
+    fileDrop.addEventListener('click', function () { fileInput && fileInput.click(); });
+    fileDrop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') fileInput && fileInput.click(); });
+
+    if (fileInput) fileInput.addEventListener('change', function () {
+      if (fileInput.files.length) {
+        _setFileSelected(fileDropContent, fileSelectedEl, fileNameDisplay, fileInput.files[0].name);
+      }
+    });
+
+    fileDrop.addEventListener('dragover', function (e) { e.preventDefault(); fileDrop.classList.add('drag-over'); });
+    fileDrop.addEventListener('dragleave', function () { fileDrop.classList.remove('drag-over'); });
+    fileDrop.addEventListener('drop', function (e) {
+      e.preventDefault();
+      fileDrop.classList.remove('drag-over');
+      if (e.dataTransfer.files.length) {
+        var dt = new DataTransfer();
+        dt.items.add(e.dataTransfer.files[0]);
+        fileInput.files = dt.files;
+        fileInput.dispatchEvent(new Event('change'));
+      }
+    });
+  }
+
+  function _setFileSelected(dropContent, selectedEl, nameEl, name) {
+    if (dropContent) dropContent.classList.add('hidden');
+    if (selectedEl)  selectedEl.classList.remove('hidden');
+    if (nameEl)      nameEl.textContent = name;
+  }
+
+  // ── Upload form ───────────────────────────────────────────────────────
+  function _initUploadForm() {
+    var form = document.getElementById('uploadForm');
+    if (!form) return;
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var errBox = document.getElementById('uploadError');
+      var errMsg = document.getElementById('uploadErrorMsg');
+      if (errBox) errBox.classList.add('hidden');
+
+      var buildingType = document.getElementById('buildingType') ? document.getElementById('buildingType').value : '';
+      var buildingCode = document.getElementById('buildingCode') ? document.getElementById('buildingCode').value : '';
+      var city         = (document.getElementById('city') || {}).value || '';
+      var state        = (document.getElementById('state') || {}).value || '';
+      var country      = (document.getElementById('country') || {}).value || '';
+      var fileInput    = document.getElementById('planFile');
+
+      function showErr(msg) {
+        if (errMsg) errMsg.textContent = msg;
+        if (errBox) errBox.classList.remove('hidden');
+      }
+
+      if (!buildingType || !buildingCode || !city.trim() || !state.trim() || !country.trim()) {
+        showErr('Please fill in all project details before analyzing.'); return;
+      }
+      if (!fileInput || !fileInput.files.length) {
+        showErr('Please select a plan file (.pdf, .docx, .dxf, or .dwg).'); return;
+      }
+
+      var file     = fileInput.files[0];
+      var formData = { buildingType: buildingType, buildingCode: buildingCode, city: city.trim(), state: state.trim(), country: country.trim() };
+
+      // Open modal and show pipeline tab
+      openModal();
+      switchTab('pipeline');
+      _resetPipelineUI();
+      _currentFile = file;
+
+      try {
+        // Hash file for traceability
+        var fileBuf = await file.arrayBuffer();
+        var fileHash = await (PE.Export ? PE.Export.hashFile(fileBuf) : Promise.resolve(null));
+
+        var result = await PE.Pipeline.run(file, formData, function (stepId, status, detail) {
+          _updatePipelineStep(stepId, status, detail);
+        });
+
+        result.projectInfo = Object.assign({ fileName: file.name }, formData);
+        result.fileHash    = fileHash;
+        _currentResult     = result;
+        _chatHistory       = [];
+        _chatContext       = { projectInfo: result.projectInfo, facts: result.facts, findings: result.findings };
+
+        // Build preview
+        _buildPreview(result);
+        // Build analysis tab
+        _buildAnalysis(result);
+        // Save to history
+        if (PE.History) PE.History.save({ projectInfo: result.projectInfo, score: result.score, findingsSummary: { flagged: result.findings.filter(function (f) { return f.status === 'FLAGGED'; }).length, review: result.findings.filter(function (f) { return f.status === 'REVIEW'; }).length, passed: result.findings.filter(function (f) { return f.status === 'PASS'; }).length } }).catch(function () {});
+
+        // After pipeline finishes, switch to analysis
+        setTimeout(function () { switchTab('analysis'); }, 600);
+
+      } catch (err) {
+        console.error(err);
+        showErr('An error occurred: ' + err.message);
+        closeModal();
+      }
+    });
+  }
+
+  // ── Pipeline UI ───────────────────────────────────────────────────────
+  function _resetPipelineUI() {
+    if (!PE.Pipeline) return;
+    PE.Pipeline.STEPS.forEach(function (step) {
+      var el = document.getElementById('step-' + step.id);
+      if (!el) return;
+      el.className = 'pipeline-step pending';
+      var statusEl = el.querySelector('.step-status');
+      if (statusEl) statusEl.textContent = '';
+      var iconEl = el.querySelector('.step-icon i');
+      if (iconEl) { iconEl.className = 'fas ' + step.icon; }
+    });
+  }
+
+  function _updatePipelineStep(stepId, status, detail) {
+    var el = document.getElementById('step-' + stepId);
+    if (!el) return;
+    el.className = 'pipeline-step ' + status;
+    var iconEl = el.querySelector('.step-icon i');
+    if (iconEl) {
+      if (status === 'running') iconEl.className = 'fas fa-circle-notch fa-spin';
+      else if (status === 'done')  iconEl.className = 'fas fa-check';
+      else if (status === 'error') iconEl.className = 'fas fa-xmark';
+    }
+    var detailEl = el.querySelector('.step-detail');
+    if (detailEl) detailEl.textContent = detail || '';
+  }
+
+  // ── Preview ───────────────────────────────────────────────────────────
+  function _buildPreview(result) {
+    var container = document.getElementById('previewContainer');
+    if (!container) return;
+    var extraction = result.rawExtraction || {};
+
+    if (extraction.source === 'dwg') {
+      container.innerHTML = '<div style="text-align:center;padding:48px 24px;">' +
+        '<i class="fas fa-drafting-compass" style="font-size:2.5rem;color:#38bdf8;display:block;margin-bottom:16px;"></i>' +
+        '<p style="font-weight:600;color:#fff;margin-bottom:8px;">DWG file received: ' + _esc(result.projectInfo.fileName) + '</p>' +
+        '<p style="font-size:.875rem;color:#64748b;">Native DWG rendering requires the full engine. Convert to DXF or PDF for automated analysis.</p></div>';
+    } else if (extraction.source === 'pdf') {
+      container.innerHTML = '<div style="text-align:center;padding:32px 24px;">' +
+        '<i class="fas fa-file-pdf" style="font-size:2.5rem;color:#f87171;display:block;margin-bottom:12px;"></i>' +
+        '<p style="font-weight:600;color:#fff;margin-bottom:8px;">' + _esc(result.projectInfo.fileName) + '</p>' +
+        '<p style="font-size:.875rem;color:#64748b;margin-bottom:16px;">' + (extraction.pageCount || '?') + ' page(s) · Text extracted for analysis</p>' +
+        '<div style="text-align:left;font-size:.75rem;color:#94a3b8;max-height:260px;overflow-y:auto;white-space:pre-wrap;background:rgba(255,255,255,.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,.06);">' + _esc((extraction.text || '').slice(0, 2000)) + (extraction.text && extraction.text.length > 2000 ? '…' : '') + '</div></div>';
+    } else if (extraction.source === 'dxf') {
+      container.innerHTML = '<div style="padding:16px;">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+        '<i class="fas fa-vector-square" style="color:#38bdf8;font-size:1.5rem;"></i>' +
+        '<div><p style="font-weight:600;color:#fff;margin:0;">' + _esc(result.projectInfo.fileName) + '</p>' +
+        '<p style="font-size:.75rem;color:#64748b;margin:0;">' + (extraction.layers ? extraction.layers.length + ' layers · ' : '') + (extraction.lineCount || 0) + ' LINE entities · ' + (extraction.textEntities || 0) + ' text entities</p></div></div>' +
+        (extraction.layers && extraction.layers.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">' + extraction.layers.slice(0, 20).map(function (l) { return '<span style="font-size:.65rem;padding:2px 8px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:4px;color:#7dd3fc;">' + _esc(l) + '</span>'; }).join('') + (extraction.layers.length > 20 ? '<span style="font-size:.65rem;color:#64748b;">+' + (extraction.layers.length - 20) + ' more</span>' : '') + '</div>' : '') + '</div>';
+    } else if (extraction.source === 'docx') {
+      container.innerHTML = '<div style="color:#cbd5e1;font-size:.875rem;line-height:1.7;">' + _extractDocxHtml(result) + '</div>';
+    } else {
+      container.innerHTML = '<p style="text-align:center;padding:48px;color:#64748b;">No preview available for this file type.</p>';
+    }
+  }
+
+  function _extractDocxHtml(result) {
+    // Re-render DOCX HTML if mammoth result was stored, else show text snippet
+    var text = (result.rawExtraction && result.rawExtraction.text) || '';
+    return '<pre style="white-space:pre-wrap;font-family:inherit;">' + _esc(text.slice(0, 3000)) + (text.length > 3000 ? '…' : '') + '</pre>';
+  }
+
+  // ── Analysis tab ──────────────────────────────────────────────────────
+  function _buildAnalysis(result) {
+    var container = document.getElementById('analysisContent');
+    if (!container) return;
+
+    var score    = result.score || 0;
+    var findings = result.findings || [];
+    var flagged  = findings.filter(function (f) { return f.status === 'FLAGGED'; });
+    var review   = findings.filter(function (f) { return f.status === 'REVIEW';  });
+    var passed   = findings.filter(function (f) { return f.status === 'PASS';    });
+    var info     = result.projectInfo || {};
+
+    var scoreColor = score >= 85 ? '#34d399' : score >= 65 ? '#fbbf24' : '#f87171';
+
+    // Score header
+    var html = '<div style="background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.18);border-radius:16px;padding:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">' +
+      '<div><div style="font-size:.7rem;color:#64748b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.1em;">Compliance Score</div>' +
+      '<div style="font-size:2.8rem;font-weight:700;color:' + scoreColor + ';font-family:\'Space Grotesk\',sans-serif;">' + score + '%</div>' +
+      '<div style="font-size:.75rem;color:#64748b;margin-top:4px;">' + passed.length + ' pass · ' + review.length + ' review · ' + flagged.length + ' flagged</div></div>' +
+      '<div style="text-align:right;font-size:.75rem;color:#64748b;">' +
+      '<div><span style="color:#fff;font-weight:600;">' + _esc(info.buildingType || '') + '</span></div>' +
+      '<div>' + _esc(info.buildingCode || '') + '</div><div>' + _esc((info.city || '') + ', ' + (info.state || '')) + '</div></div></div>';
+
+    // Summary
+    if (result.summary) {
+      html += '<div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;margin-bottom:16px;">' +
+        '<div style="font-size:.7rem;color:#38bdf8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Summary</div>' +
+        '<div style="font-size:.8rem;line-height:1.65;color:#94a3b8;white-space:pre-wrap;">' + _esc(result.summary).replace(/\*\*(.+?)\*\*/g, '<strong style="color:#fff;">$1</strong>').replace(/^##\s+(.+)$/gm, '<strong style="color:#e2e8f0;font-size:.9rem;">$1</strong>').replace(/^-\s+/gm, '• ') + '</div></div>';
+    }
+
+    // Filter bar
+    html += '<div style="display:flex;gap:6px;margin-bottom:12px;" id="findingFilters">' +
+      '<button class="filter-btn active" data-filter="all" onclick="PE.App.filterFindings(\'all\',this)" style="font-size:.7rem;padding:4px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(56,189,248,.1);color:#38bdf8;cursor:pointer;">All (' + findings.length + ')</button>' +
+      '<button class="filter-btn" data-filter="FLAGGED" onclick="PE.App.filterFindings(\'FLAGGED\',this)" style="font-size:.7rem;padding:4px 12px;border-radius:999px;border:1px solid rgba(248,113,113,.3);background:transparent;color:#f87171;cursor:pointer;">Flagged (' + flagged.length + ')</button>' +
+      '<button class="filter-btn" data-filter="REVIEW" onclick="PE.App.filterFindings(\'REVIEW\',this)" style="font-size:.7rem;padding:4px 12px;border-radius:999px;border:1px solid rgba(251,191,36,.3);background:transparent;color:#fbbf24;cursor:pointer;">Review (' + review.length + ')</button>' +
+      '<button class="filter-btn" data-filter="PASS" onclick="PE.App.filterFindings(\'PASS\',this)" style="font-size:.7rem;padding:4px 12px;border-radius:999px;border:1px solid rgba(52,211,153,.3);background:transparent;color:#34d399;cursor:pointer;">Pass (' + passed.length + ')</button>' +
+      '</div>';
+
+    // Findings list
+    html += '<div id="findingsList" aria-live="polite" aria-label="Compliance findings">' +
+      findings.map(function (f) { return _findingRow(f); }).join('') + '</div>';
+
+    // Export buttons
+    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;">' +
+      '<button onclick="PE.App.exportReport()" class="btn-accent" style="font-size:.8rem;padding:10px 18px;" title="Open printable compliance report">' +
+      '<i class="fas fa-print text-xs"></i> Print Report</button>' +
+      '<button onclick="PE.App.exportLetter()" class="btn-ghost" style="font-size:.8rem;padding:10px 18px;" title="Download correction letter as markdown">' +
+      '<i class="fas fa-file-arrow-down text-xs"></i> Correction Letter</button>' +
+      '<button onclick="PE.App.exportJson()" class="btn-ghost" style="font-size:.8rem;padding:10px 18px;" title="Export findings as JSON">' +
+      '<i class="fas fa-code text-xs"></i> Export JSON</button>' +
+      '</div>';
+
+    html += '<p style="font-size:.7rem;color:#475569;margin-top:10px;">* Automated preview. Subscribe for complete review with official correction letter and redline overlay.</p>';
+
+    container.innerHTML = html;
+  }
+
+  function _findingRow(f) {
+    var statusStyle = {
+      PASS:    'color:#34d399;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);',
+      REVIEW:  'color:#fbbf24;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);',
+      FLAGGED: 'color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);'
+    };
+    var wrapStyle = f.status === 'FLAGGED' ? 'border-color:rgba(248,113,113,.15);background:rgba(248,113,113,.03);' :
+                    f.status === 'REVIEW'  ? 'border-color:rgba(251,191,36,.15);background:rgba(251,191,36,.02);' :
+                    'border-color:rgba(255,255,255,.07);background:rgba(255,255,255,.025);';
+
+    return '<div class="finding-row" data-status="' + f.status + '" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid;' + wrapStyle + '">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
+      '<div style="flex:1;">' +
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+      '<span style="font-size:.8rem;font-weight:600;color:#e2e8f0;">' + _esc(f.label) + '</span>' +
+      '<span style="font-size:.65rem;color:#64748b;">' + _esc(f.code_section || '') + '</span>' +
+      '</div>' +
+      '<p style="font-size:.75rem;color:#94a3b8;margin:0 0 4px 0;">' + _esc(f.note) + '</p>' +
+      (f.status !== 'PASS' ? '<details style="margin-top:4px;"><summary style="font-size:.7rem;color:#64748b;cursor:pointer;">Remediation ›</summary><p style="font-size:.72rem;color:#7dd3fc;margin:4px 0 0 0;padding-left:8px;">' + _esc(f.remediation) + '</p></details>' : '') +
+      '</div>' +
+      '<span style="font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.07em;white-space:nowrap;flex-shrink:0;' + (statusStyle[f.status] || '') + '">' + f.status + '</span>' +
+      '</div></div>';
+  }
+
+  // ── Finding filter ────────────────────────────────────────────────────
+  function filterFindings(filter, btn) {
+    $.all('.filter-btn').forEach(function (b) {
+      b.classList.remove('active');
+      b.style.background = 'transparent';
+    });
+    if (btn) {
+      btn.classList.add('active');
+      btn.style.background = filter === 'all' ? 'rgba(56,189,248,.1)' : filter === 'FLAGGED' ? 'rgba(248,113,113,.1)' : filter === 'REVIEW' ? 'rgba(251,191,36,.1)' : 'rgba(52,211,153,.1)';
+    }
+    $.all('.finding-row').forEach(function (row) {
+      row.style.display = (filter === 'all' || row.dataset.status === filter) ? '' : 'none';
+    });
+  }
+
+  // ── Export ────────────────────────────────────────────────────────────
+  function exportReport() {
+    if (!_currentResult || !PE.Export) return;
+    PE.Export.printReport(_currentResult);
+  }
+
+  function exportLetter() {
+    if (!_currentResult || !PE.Export) return;
+    PE.Export.downloadLetter(_currentResult);
+  }
+
+  function exportJson() {
+    if (!_currentResult || !PE.Export) return;
+    PE.Export.downloadJson(_currentResult);
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────
+  function _initModal() {
+    var overlay = document.getElementById('modalOverlay');
+    if (!overlay) return;
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeModal(); closeAIModal(); } });
+  }
+
+  function openModal() {
+    var el = document.getElementById('modalOverlay');
+    if (el) { el.classList.add('active'); document.body.style.overflow = 'hidden'; }
+  }
+
+  function closeModal() {
+    var el = document.getElementById('modalOverlay');
+    if (el) { el.classList.remove('active'); document.body.style.overflow = ''; }
+  }
+
+  function switchTab(name) {
+    $.all('.tab-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+    var idMap = { preview: 'tabPreview', pipeline: 'tabPipeline', analysis: 'tabAnalysis', chat: 'tabChat', history: 'tabHistory' };
+    $.all('.tab-pane').forEach(function (p) { p.classList.toggle('active', p.id === idMap[name]); });
+    if (name === 'history') _loadHistoryTab();
+    if (name === 'chat')    _focusChatInput();
+  }
+
+  // ── AI Settings modal ─────────────────────────────────────────────────
+  function _initAISettings() {
+    var btn     = document.getElementById('aiSettingsBtn');
+    var overlay = document.getElementById('aiModalOverlay');
+    var form    = document.getElementById('aiSettingsForm');
+    var clearBtn= document.getElementById('clearLLMBtn');
+    if (!overlay) return;
+
+    if (btn)    btn.addEventListener('click', function () { openAIModal(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeAIModal(); });
+
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      if (PE.LLM) PE.LLM.clearConfig();
+      _updateLLMBadge();
+      document.getElementById('aiSaveStatus').textContent = 'Configuration cleared.';
+      document.getElementById('aiSaveStatus').style.color = '#fbbf24';
+    });
+
+    if (form) form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var provider = document.getElementById('llmProvider').value;
+      var apiKey   = (document.getElementById('llmApiKey') || {}).value || '';
+      var model    = (document.getElementById('llmModel') || {}).value || '';
+      var baseUrl  = (document.getElementById('llmBaseUrl') || {}).value || '';
+      if (PE.LLM) {
+        var defaults = PE.LLM.DEFAULTS[provider] || {};
+        PE.LLM.setConfig({
+          provider: provider,
+          apiKey:   apiKey,
+          model:    model || defaults.model,
+          baseUrl:  baseUrl || defaults.baseUrl
+        });
+        _updateLLMBadge();
+        var status = document.getElementById('aiSaveStatus');
+        if (status) { status.textContent = '✓ Saved (key stored only in your browser)'; status.style.color = '#34d399'; }
+        setTimeout(closeAIModal, 1200);
+      }
+    });
+
+    // Provider change → prefill defaults
+    var providerSel = document.getElementById('llmProvider');
+    if (providerSel) providerSel.addEventListener('change', function () {
+      if (!PE.LLM) return;
+      var def = PE.LLM.DEFAULTS[providerSel.value] || {};
+      var modelInput = document.getElementById('llmModel');
+      var urlInput   = document.getElementById('llmBaseUrl');
+      if (modelInput && def.model)   modelInput.placeholder = def.model;
+      if (urlInput   && def.baseUrl) urlInput.value = def.baseUrl;
+    });
+
+    // Pre-fill from saved config
+    _populateAIForm();
+  }
+
+  function _populateAIForm() {
+    if (!PE.LLM) return;
+    var cfg = PE.LLM.getConfig();
+    if (!cfg) return;
+    var p = document.getElementById('llmProvider');
+    var k = document.getElementById('llmApiKey');
+    var m = document.getElementById('llmModel');
+    var u = document.getElementById('llmBaseUrl');
+    if (p && cfg.provider) p.value = cfg.provider;
+    if (k && cfg.apiKey)   k.value = cfg.apiKey;
+    if (m && cfg.model)    m.value = cfg.model;
+    if (u && cfg.baseUrl)  u.value = cfg.baseUrl;
+  }
+
+  function openAIModal() {
+    _populateAIForm();
+    var el = document.getElementById('aiModalOverlay');
+    if (el) { el.classList.add('active'); document.body.style.overflow = 'hidden'; }
+  }
+
+  function closeAIModal() {
+    var el = document.getElementById('aiModalOverlay');
+    if (el) { el.classList.remove('active'); document.body.style.overflow = ''; }
+  }
+
+  // ── Chat panel ────────────────────────────────────────────────────────
+  function _initChat() {
+    var form = document.getElementById('chatForm');
+    if (!form) return;
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var input = document.getElementById('chatInput');
+      var q = (input ? input.value.trim() : '');
+      if (!q) return;
+      if (input) input.value = '';
+      await _sendChat(q);
+    });
+  }
+
+  function _focusChatInput() {
+    setTimeout(function () {
+      var input = document.getElementById('chatInput');
+      if (input) input.focus();
+    }, 100);
+  }
+
+  async function _sendChat(question) {
+    var messages = document.getElementById('chatMessages');
+    if (!messages) return;
+
+    _appendChatMsg('user', question, messages);
+
+    if (!PE.LLM || !PE.LLM.isConfigured()) {
+      _appendChatMsg('assistant', '**AI not configured.** Click the AI Settings button in the navigation bar to add your API key (OpenAI, Anthropic, Azure, or local Ollama). Your key is stored only in your browser.', messages);
+      return;
+    }
+
+    if (!_currentResult) {
+      _appendChatMsg('assistant', 'Please run a plan analysis first (upload a file and click "Analyze Plan"), then ask me questions about the results.', messages);
+      return;
+    }
+
+    var thinkingId = 'msg-' + Date.now();
+    _appendChatMsg('assistant', '…', messages, thinkingId);
+    _scrollChat(messages);
+
+    if (_chatAbort) _chatAbort.abort();
+    _chatAbort = new AbortController();
+
+    try {
+      var reply = await PE.LLM.chat(question, _chatContext, _chatHistory, _chatAbort.signal);
+      // Replace thinking bubble
+      var thinkEl = document.getElementById(thinkingId);
+      if (thinkEl) thinkEl.querySelector('.chat-content').textContent = reply;
+      _chatHistory.push({ role: 'user', content: question });
+      _chatHistory.push({ role: 'assistant', content: reply });
+      if (_chatHistory.length > 20) _chatHistory = _chatHistory.slice(-20);
+    } catch (err) {
+      var thinkEl2 = document.getElementById(thinkingId);
+      if (thinkEl2) thinkEl2.querySelector('.chat-content').textContent = 'Error: ' + err.message;
+    }
+    _scrollChat(messages);
+  }
+
+  function _appendChatMsg(role, text, container, id) {
+    var wrap = document.createElement('div');
+    wrap.className = 'chat-msg ' + role;
+    if (id) wrap.id = id;
+    wrap.style.cssText = 'margin-bottom:12px;' + (role === 'user' ? 'text-align:right;' : '');
+    var bubble = document.createElement('div');
+    bubble.className = 'chat-content';
+    bubble.style.cssText = 'display:inline-block;max-width:85%;padding:10px 14px;border-radius:12px;font-size:.8rem;line-height:1.55;' +
+      (role === 'user' ? 'background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.25);color:#e2e8f0;' : 'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#94a3b8;text-align:left;');
+    bubble.textContent = text;
+    wrap.appendChild(bubble);
+    container.appendChild(wrap);
+    _scrollChat(container);
+  }
+
+  function _scrollChat(container) {
+    setTimeout(function () { if (container) container.scrollTop = container.scrollHeight; }, 50);
+  }
+
+  // ── History tab ───────────────────────────────────────────────────────
+  function _initHistoryTab() {}
+
+  function _loadHistoryTab() {
+    var container = document.getElementById('historyList');
+    if (!container || !PE.History) return;
+    PE.History.list().then(function (items) {
+      if (!items.length) {
+        container.innerHTML = '<p style="text-align:center;color:#475569;padding:32px;">No review history yet. Run a plan analysis to start building your history.</p>';
+        return;
+      }
+      container.innerHTML = items.map(function (item) {
+        var d = new Date(item.timestamp).toLocaleString();
+        var info = item.projectInfo || {};
+        var s = item.score || 0;
+        var scoreColor = s >= 85 ? '#34d399' : s >= 65 ? '#fbbf24' : '#f87171';
+        var fs = item.findingsSummary || {};
+        return '<div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
+          '<div style="flex:1;">' +
+          '<div style="font-size:.85rem;font-weight:600;color:#e2e8f0;">' + _esc(info.fileName || 'Unknown file') + '</div>' +
+          '<div style="font-size:.75rem;color:#64748b;">' + _esc(info.buildingType || '') + ' · ' + _esc((info.city || '') + ', ' + (info.state || '')) + ' · ' + d + '</div>' +
+          '<div style="font-size:.7rem;color:#64748b;margin-top:2px;">' + (fs.flagged || 0) + ' flagged · ' + (fs.review || 0) + ' review · ' + (fs.passed || 0) + ' pass</div>' +
+          '</div>' +
+          '<div style="font-size:1.4rem;font-weight:700;color:' + scoreColor + ';flex-shrink:0;">' + s + '%</div>' +
+          '</div>';
+      }).join('');
+    }).catch(function () {
+      container.innerHTML = '<p style="text-align:center;color:#475569;padding:32px;">History unavailable (IndexedDB not supported).</p>';
+    });
+  }
+
+  // ── Pricing calculator ────────────────────────────────────────────────
+  function _initPricingCalc() {
+    var calcBtn = document.querySelector('[onclick="calculatePrice()"]');
+    if (calcBtn) { calcBtn.removeAttribute('onclick'); calcBtn.addEventListener('click', calculatePrice); }
+    ['numPlans','propValue','projectSize'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', function () {
+        if (!document.getElementById('calcResult').classList.contains('hidden')) calculatePrice();
+      });
+    });
+  }
+
+  function calculatePrice() {
+    var numPlans    = parseInt((document.getElementById('numPlans') || {}).value) || 1;
+    var propValue   = parseFloat((document.getElementById('propValue') || {}).value) || 0;
+    var projectSize = parseFloat((document.getElementById('projectSize') || {}).value) || 0;
+    var baseCost    = 30;
+    var surcharge   = (propValue / 100000) * 15;
+    var extra       = projectSize > 2000 ? 15 : 0;
+    var perPlan     = baseCost + surcharge + extra;
+    var total       = perPlan * numPlans;
+    var amountEl    = document.getElementById('calcAmount');
+    var breakdownEl = document.getElementById('calcBreakdown');
+    var resultEl    = document.getElementById('calcResult');
+    if (amountEl)    amountEl.textContent = '$' + total.toFixed(2);
+    if (breakdownEl) breakdownEl.textContent = '$' + perPlan.toFixed(2) + ' per plan × ' + numPlans + ' plan' + (numPlans !== 1 ? 's' : '') + (surcharge > 0 ? ' · +$' + surcharge.toFixed(2) + ' property surcharge' : '') + (extra > 0 ? ' · +$' + extra.toFixed(2) + ' large-project fee' : '');
+    if (resultEl)    resultEl.classList.remove('hidden');
+    ['tierStarter','tierPro','tierElite'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.classList.remove('ring-highlight');
+    });
+    var tierId = numPlans <= 3 ? 'tierStarter' : numPlans <= 6 ? 'tierPro' : 'tierElite';
+    var tier = document.getElementById(tierId); if (tier) tier.classList.add('ring-highlight');
+  }
+
+  // ── Subscribe form ────────────────────────────────────────────────────
+  function _initSubscribeForm() {
+    var form = document.getElementById('subscribeForm');
+    if (!form) return;
+
+    // Tier radio sync
+    $.all('input[name="subTier"]').forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        $.all('input[name="subTier"]').forEach(function (r) {
+          var box = r.nextElementSibling;
+          if (!box) return;
+          var sub = box.querySelector('div:last-child');
+          if (r.checked) { box.style.borderColor='rgba(56,189,248,.45)'; box.style.background='rgba(56,189,248,.07)'; box.style.color='#38bdf8'; if (sub) sub.style.color='#7dd3fc'; }
+          else           { box.style.borderColor='rgba(255,255,255,.1)';  box.style.background='rgba(255,255,255,.025)'; box.style.color='#64748b'; if (sub) sub.style.color='#64748b'; }
+        });
+      });
+    });
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var errBox = document.getElementById('subscribeError');
+      var errMsg = document.getElementById('subscribeErrorMsg');
+      if (errBox) errBox.classList.add('hidden');
+      var name  = (document.getElementById('subscriberName') || {}).value || '';
+      var email = (document.getElementById('subscriberEmail') || {}).value || '';
+      var tier  = ((document.querySelector('input[name="subTier"]:checked') || {}).value) || 'Pro';
+      if (!name.trim() || !email.trim()) {
+        if (errMsg) errMsg.textContent = 'Please enter your name and email address.';
+        if (errBox) errBox.classList.remove('hidden'); return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (errMsg) errMsg.textContent = 'Please enter a valid email address.';
+        if (errBox) errBox.classList.remove('hidden'); return;
+      }
+      await new Promise(function (r) { setTimeout(r, 800); });
+      var resultEl = document.getElementById('subscribeResult');
+      if (resultEl) resultEl.innerHTML = '<div style="background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);border-radius:16px;padding:20px;display:flex;align-items:flex-start;gap:16px;margin-top:8px;">' +
+        '<div style="width:40px;height:40px;border-radius:12px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);display:flex;align-items:center;justify-content:center;color:#34d399;flex-shrink:0;"><i class="fas fa-check"></i></div>' +
+        '<div><p style="font-weight:700;color:#fff;margin-bottom:4px;">Inquiry Received!</p>' +
+        '<p style="font-size:.875rem;color:#94a3b8;">Thank you, <strong style="color:#fff;">' + _esc(name) + '</strong>. Your <strong style="color:#38bdf8;">' + _esc(tier) + '</strong> inquiry has been received. We\'ll be in touch at <strong style="color:#fff;">' + _esc(email) + '</strong>.</p></div></div>';
+      form.reset();
+    });
+  }
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────
+  function _initKeyboardShortcuts() {
+    document.addEventListener('keydown', function (e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openCommandPalette(); return; }
+      if (e.key === '?') { showShortcutsHelp(); return; }
+      if (e.key === 'u' || e.key === 'U') { document.getElementById('upload') && document.getElementById('upload').scrollIntoView({ behavior: 'smooth' }); }
+      if (e.key === 'r' || e.key === 'R') { if (_currentResult) { openModal(); switchTab('analysis'); } }
+      if (e.key === 'e' || e.key === 'E') { exportReport(); }
+      if (e.key === 'Escape') { closeModal(); closeAIModal(); closeCommandPalette(); }
+    });
+  }
+
+  function showShortcutsHelp() {
+    var overlay = document.getElementById('shortcutsOverlay');
+    if (overlay) overlay.classList.toggle('active');
+  }
+
+  // ── Command palette ───────────────────────────────────────────────────
+  var _paletteOpen = false;
+
+  function _initCommandPalette() {
+    var overlay  = document.getElementById('paletteOverlay');
+    var input    = document.getElementById('paletteInput');
+    var list     = document.getElementById('paletteList');
+    if (!overlay) return;
+
+    var commands = [
+      { label: 'Upload Plan',          icon: 'fa-upload',         action: function () { document.getElementById('upload').scrollIntoView({ behavior:'smooth' }); } },
+      { label: 'View Analysis',        icon: 'fa-chart-bar',      action: function () { if (_currentResult) { openModal(); switchTab('analysis'); } } },
+      { label: 'Print Report',         icon: 'fa-print',          action: exportReport },
+      { label: 'Download Letter',      icon: 'fa-file-arrow-down',action: exportLetter },
+      { label: 'Export JSON',          icon: 'fa-code',           action: exportJson },
+      { label: 'AI Settings',          icon: 'fa-key',            action: openAIModal },
+      { label: 'View History',         icon: 'fa-clock-rotate-left', action: function () { openModal(); switchTab('history'); } },
+      { label: 'About',                icon: 'fa-circle-info',    action: function () { document.getElementById('about').scrollIntoView({ behavior:'smooth' }); } },
+      { label: 'Submission Guidelines',icon: 'fa-book-open',      action: function () { document.getElementById('guidelines').scrollIntoView({ behavior:'smooth' }); } },
+      { label: 'Pricing',              icon: 'fa-calculator',     action: function () { document.getElementById('pricing').scrollIntoView({ behavior:'smooth' }); } },
+      { label: 'Subscribe',            icon: 'fa-paper-plane',    action: function () { document.getElementById('subscribe').scrollIntoView({ behavior:'smooth' }); } },
+      { label: 'Contact',              icon: 'fa-envelope',       action: function () { document.getElementById('contact').scrollIntoView({ behavior:'smooth' }); } }
+    ];
+
+    function render(filtered) {
+      list.innerHTML = filtered.map(function (cmd, i) {
+        return '<div class="palette-item" tabindex="0" style="padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;border-radius:8px;' +
+          (i === 0 ? 'background:rgba(56,189,248,.1);' : '') + '">' +
+          '<i class="fas ' + cmd.icon + '" style="color:#38bdf8;width:14px;font-size:.85rem;flex-shrink:0;"></i>' +
+          '<span style="font-size:.9rem;color:#e2e8f0;">' + _esc(cmd.label) + '</span>' +
+          '</div>';
+      }).join('');
+      $.all('.palette-item', list).forEach(function (item, i) {
+        item.addEventListener('click', function () { filtered[i].action(); closeCommandPalette(); });
+        item.addEventListener('keydown', function (e) { if (e.key === 'Enter') { filtered[i].action(); closeCommandPalette(); } });
+      });
+    }
+
+    if (input) input.addEventListener('input', function () {
+      var q = input.value.toLowerCase();
+      render(commands.filter(function (c) { return c.label.toLowerCase().includes(q); }));
+    });
+
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeCommandPalette(); });
+    render(commands);
+  }
+
+  function openCommandPalette() {
+    var overlay = document.getElementById('paletteOverlay');
+    var input   = document.getElementById('paletteInput');
+    if (!overlay) return;
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    _paletteOpen = true;
+    if (input) { input.value = ''; input.focus(); }
+    var list = document.getElementById('paletteList');
+    if (list) { var items = $.all('.palette-item', list); if (items.length) items[0].style.background = 'rgba(56,189,248,.1)'; }
+  }
+
+  function closeCommandPalette() {
+    var overlay = document.getElementById('paletteOverlay');
+    if (overlay) { overlay.classList.remove('active'); document.body.style.overflow = ''; }
+    _paletteOpen = false;
+  }
+
+  // ── Service Worker ────────────────────────────────────────────────────
+  function _registerSW() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+  }
+
+  // ── Utility ───────────────────────────────────────────────────────────
+  function _esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ── Copy enc key ──────────────────────────────────────────────────────
+  function copyEncKey() {
+    var key = (document.getElementById('encryptionKey') || {}).value || '';
+    navigator.clipboard && navigator.clipboard.writeText(key).then(function () {
+      var btn = document.getElementById('copyKeyBtn');
+      if (btn) { btn.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!'; setTimeout(function () { btn.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy'; }, 2000); }
+    });
+  }
+
+  // ── Public API ────────────────────────────────────────────────────────
+  return {
+    init:             init,
+    openModal:        openModal,
+    closeModal:       closeModal,
+    switchTab:        switchTab,
+    openAIModal:      openAIModal,
+    closeAIModal:     closeAIModal,
+    calculatePrice:   calculatePrice,
+    filterFindings:   filterFindings,
+    exportReport:     exportReport,
+    exportLetter:     exportLetter,
+    exportJson:       exportJson,
+    copyEncKey:       copyEncKey,
+    openCommandPalette: openCommandPalette,
+    closeCommandPalette: closeCommandPalette,
+    showShortcutsHelp:  showShortcutsHelp
+  };
+
+}());
+
+window.PE = PE;
+
+// Auto-init when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function () { PE.App.init(); });
+} else {
+  PE.App.init();
+}

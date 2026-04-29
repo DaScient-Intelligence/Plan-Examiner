@@ -1,0 +1,139 @@
+/* ── Plan-Examiner Stylesheet ─────────────────────────────────────── */
+
+/* ── Base ─────────────────────────────────────────────────── */
+body { background-color: #030d1a; color: #e2e8f0; overflow-x: hidden; }
+
+/* ── Reduced motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ── Ambient orbs ────────────────────────────────────────── */
+.ambient-bg { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
+.orb-1 { position: absolute; top: -15%; left: -10%; width: 55vw; height: 55vw; background: radial-gradient(circle, rgba(56,189,248,.09) 0%, transparent 70%); filter: blur(90px); }
+.orb-2 { position: absolute; bottom: -20%; right: -10%; width: 65vw; height: 65vw; background: radial-gradient(circle, rgba(99,102,241,.06) 0%, transparent 70%); filter: blur(110px); }
+
+/* ── Grid overlay ────────────────────────────────────────── */
+.grid-overlay { position: fixed; inset: 0; z-index: -1; pointer-events: none; background-image: linear-gradient(to right, rgba(255,255,255,.015) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.015) 1px, transparent 1px); background-size: 50px 50px; }
+
+/* ── Glass utilities ─────────────────────────────────────── */
+.glass { background: rgba(255,255,255,.025); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.07); box-shadow: 0 8px 32px rgba(0,0,0,.3); transition: background .3s, border-color .3s; }
+.glass:hover { background: rgba(255,255,255,.045); border-color: rgba(255,255,255,.12); }
+.glass-accent { background: rgba(56,189,248,.05); border: 1px solid rgba(56,189,248,.18); }
+.glass-nav { background: rgba(3,13,26,.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,.05); }
+
+/* ── Terminal ─────────────────────────────────────────────── */
+.terminal { background: rgba(3,13,26,.9); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(56,189,248,.15); border-radius: 20px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,.8), 0 0 60px rgba(56,189,248,.04), inset 0 1px 0 rgba(255,255,255,.05); position: relative; }
+.terminal-bar { background: rgba(255,255,255,.02); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.05); }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.scan-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #38bdf8, transparent); box-shadow: 0 0 12px #38bdf8; z-index: 5; }
+
+/* ── Typography helpers ──────────────────────────────────── */
+.text-gradient { background: linear-gradient(135deg, #fff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.text-accent-gradient { background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.section-label { font-family: 'ui-monospace', monospace; font-size: .7rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: #38bdf8; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn-accent { background: #38bdf8; color: #030d1a; font-weight: 700; padding: 14px 28px; border-radius: 999px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: background .2s, transform .15s, box-shadow .2s; box-shadow: 0 0 20px rgba(56,189,248,.2); }
+.btn-accent:hover { background: #0ea5e9; transform: translateY(-2px); box-shadow: 0 0 30px rgba(56,189,248,.35); }
+.btn-accent:focus-visible { outline: 2px solid #38bdf8; outline-offset: 3px; }
+.btn-ghost { background: rgba(255,255,255,.04); color: #e2e8f0; font-weight: 600; padding: 14px 28px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1); cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: background .2s, transform .15s, border-color .2s; }
+.btn-ghost:hover { background: rgba(255,255,255,.08); transform: translateY(-2px); border-color: rgba(255,255,255,.2); }
+.btn-ghost:focus-visible { outline: 2px solid #38bdf8; outline-offset: 3px; }
+
+/* ── Focus rings (a11y) ──────────────────────────────────── */
+:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; border-radius: 4px; }
+
+/* ── Inputs ──────────────────────────────────────────────── */
+.pe-input { width: 100%; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 11px 16px; color: #e2e8f0; font-size: .9rem; outline: none; transition: border-color .2s, box-shadow .2s; }
+.pe-input:focus { border-color: rgba(56,189,248,.5); box-shadow: 0 0 0 3px rgba(56,189,248,.1); }
+.pe-input::placeholder { color: rgba(148,163,184,.5); }
+.pe-input option { background: #071428; color: #e2e8f0; }
+
+/* ── File drop zone ──────────────────────────────────────── */
+.file-drop { border: 2px dashed rgba(56,189,248,.3); border-radius: 14px; padding: 36px 24px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; }
+.file-drop:hover, .file-drop.drag-over { border-color: rgba(56,189,248,.65); background: rgba(56,189,248,.04); }
+.file-drop input[type="file"] { display: none; }
+
+/* ── Accordion ───────────────────────────────────────────── */
+.accordion-content { max-height: 0; overflow: hidden; transition: max-height .45s ease; }
+.accordion-item.open .accordion-content { max-height: 2400px; }
+.accordion-chevron { transition: transform .3s ease; }
+.accordion-item.open .accordion-chevron { transform: rotate(180deg); }
+
+/* ── Pricing cards ───────────────────────────────────────── */
+.price-card { background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.07); border-radius: 20px; padding: 36px 28px; position: relative; transition: transform .3s, border-color .3s, box-shadow .3s; }
+.price-card:hover { transform: translateY(-6px); border-color: rgba(56,189,248,.2); box-shadow: 0 20px 48px rgba(0,0,0,.45); }
+.price-card.featured { border-color: rgba(56,189,248,.4); background: rgba(56,189,248,.05); box-shadow: 0 0 40px rgba(56,189,248,.1); }
+.price-card.ring-highlight { box-shadow: 0 0 0 2px rgba(56,189,248,.5), 0 0 20px rgba(56,189,248,.1); }
+
+/* ── Badge ───────────────────────────────────────────────── */
+.badge-accent { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; font-size: .75rem; font-weight: 600; background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.25); color: #38bdf8; }
+.pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 8px #38bdf8; animation: pulse 2s ease-in-out infinite; }
+
+/* ── Modal ───────────────────────────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(3,13,26,.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.modal-overlay.active { opacity: 1; pointer-events: all; }
+.modal-box { background: #071428; border: 1px solid rgba(56,189,248,.2); border-radius: 20px; width: 100%; max-width: 860px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 80px rgba(0,0,0,.8); transform: scale(.96); transition: transform .3s; }
+.modal-overlay.active .modal-box { transform: scale(1); }
+.modal-body { overflow-y: auto; flex: 1; padding: 24px; }
+.tab-btn { padding: 8px 18px; border-radius: 8px; font-size: .8rem; font-weight: 600; cursor: pointer; border: none; background: transparent; color: #64748b; transition: all .2s; }
+.tab-btn.active { background: rgba(56,189,248,.1); color: #38bdf8; }
+.tab-btn:focus-visible { outline: 2px solid #38bdf8; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; }
+
+/* ── Pipeline steps ──────────────────────────────────────── */
+.pipeline-step { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.pipeline-step:last-child { border-bottom: none; }
+.step-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: .8rem; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); color: #64748b; transition: all .3s; }
+.pipeline-step.running .step-icon { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.3); color: #38bdf8; }
+.pipeline-step.done    .step-icon { background: rgba(52,211,153,.1); border-color: rgba(52,211,153,.3); color: #34d399; }
+.pipeline-step.error   .step-icon { background: rgba(248,113,113,.1); border-color: rgba(248,113,113,.3); color: #f87171; }
+.step-label { font-size: .85rem; font-weight: 600; color: #64748b; transition: color .3s; }
+.pipeline-step.running .step-label { color: #38bdf8; }
+.pipeline-step.done    .step-label { color: #e2e8f0; }
+.pipeline-step.error   .step-label { color: #f87171; }
+.step-desc { font-size: .75rem; color: #475569; margin-top: 1px; }
+.step-detail { font-size: .7rem; color: #64748b; margin-top: 3px; font-family: 'ui-monospace', monospace; word-break: break-all; }
+.pipeline-step.done .step-detail  { color: #34d399; }
+.pipeline-step.error .step-detail { color: #f87171; }
+
+/* ── Tier radio selectors ────────────────────────────────── */
+.tier-label input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.tier-box { border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px 8px; text-align: center; cursor: pointer; transition: all .2s; background: rgba(255,255,255,.025); color: #64748b; }
+.tier-label input[type="radio"]:checked + .tier-box { border-color: rgba(56,189,248,.5); background: rgba(56,189,248,.08); color: #38bdf8; }
+.tier-label:focus-within .tier-box { outline: 2px solid #38bdf8; outline-offset: 2px; }
+
+/* ── Command palette ─────────────────────────────────────── */
+#paletteOverlay { position: fixed; inset: 0; z-index: 500; background: rgba(3,13,26,.85); backdrop-filter: blur(8px); display: flex; align-items: flex-start; justify-content: center; padding-top: 15vh; opacity: 0; pointer-events: none; transition: opacity .2s; }
+#paletteOverlay.active { opacity: 1; pointer-events: all; }
+#paletteBox { width: 100%; max-width: 520px; background: #071428; border: 1px solid rgba(56,189,248,.25); border-radius: 16px; overflow: hidden; box-shadow: 0 25px 80px rgba(0,0,0,.8); }
+#paletteInput { width: 100%; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,.07); padding: 16px 20px; color: #e2e8f0; font-size: 1rem; outline: none; }
+#paletteInput::placeholder { color: #475569; }
+#paletteList { max-height: 360px; overflow-y: auto; padding: 8px; }
+.palette-item:hover, .palette-item:focus { background: rgba(56,189,248,.08) !important; outline: none; }
+
+/* ── Shortcuts overlay ───────────────────────────────────── */
+#shortcutsOverlay { position: fixed; inset: 0; z-index: 500; background: rgba(3,13,26,.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+#shortcutsOverlay.active { opacity: 1; pointer-events: all; }
+
+/* ── AI settings modal (reuses modal-overlay base) ──────── */
+#aiModalOverlay .modal-box { max-width: 540px; }
+
+/* ── Chat ────────────────────────────────────────────────── */
+#chatMessages { height: 240px; overflow-y: auto; padding: 8px 0; }
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(56,189,248,.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(56,189,248,.5); }
+
+/* ── Text selection ──────────────────────────────────────── */
+::selection { background: #38bdf8; color: #030d1a; }
+::-moz-selection { background: #38bdf8; color: #030d1a; }
+
+/* ── Skip link (a11y) ────────────────────────────────────── */
+.skip-link { position: absolute; top: -40px; left: 8px; z-index: 9999; background: #38bdf8; color: #030d1a; padding: 8px 16px; border-radius: 4px; font-weight: 700; font-size: .9rem; transition: top .2s; }
+.skip-link:focus { top: 8px; }
