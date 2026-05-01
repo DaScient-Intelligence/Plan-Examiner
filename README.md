@@ -99,11 +99,68 @@ Plan-Examiner works **fully offline** without an LLM — the rule engine is dete
 - Correction letter drafting
 - Chat Q&A ("Ask the reviewer")
 - Ambiguous-rule reasoning
+- **AI vision on PDF pages** (optional, opt-in) — see below
 
 **How to configure:**
 1. Click **AI Settings** in the navigation bar (or press `Ctrl+K → AI Settings`).
 2. Select your provider (OpenAI, Anthropic, Azure OpenAI, or local Ollama).
-3. Paste your API key. It is stored only in your browser's `localStorage` — never transmitted to Plan-Examiner servers.
+3. Paste your API key. By default it is stored only in your browser's `localStorage` — never transmitted to Plan-Examiner servers.
+4. (Optional) Enable **Session only** to store the key in `sessionStorage` instead, so it is forgotten when the tab closes — recommended on shared machines.
+5. Click **Test connection** to verify your key/model/URL with a 1-token ping before running a full review.
+
+The settings panel shows:
+- A **capability badge** next to the model field — ✅ vision-capable / ⚠ text-only / ❔ unknown — so misconfiguration is caught up front.
+- A **show/hide** eye toggle on the API key field.
+- A **base-URL validator** that requires `https://` for cloud providers and only allows `http://localhost`/`127.0.0.1` for Ollama (an opt-in checkbox unlocks remote Ollama hosts).
+- A **revoke vision consent** button (see below).
+- An **outbound endpoint preview** so you can see exactly which URL Plan-Examiner will hit with your current configuration.
+
+### Text-only mode vs Vision mode
+
+| Mode | What runs locally | What leaves the browser |
+| --- | --- | --- |
+| **Text-only** (default) | Regex extractors + rule engine, deterministic. AI summary/chat is local except for the prompts you trigger. | Just the text prompts you trigger (summarize, correction letter, chat). |
+| **Vision** (opt-in) | All of the above. | **Rasterized PDF page images (JPEG, ~1600 px on the long edge)** plus a system prompt and a JSON-only schema. Image bytes are never logged. |
+
+Vision is **off by default** and gated on three conditions:
+1. You have configured a provider/key.
+2. The configured model is vision-capable (per the table below).
+3. You toggled **"Use AI vision on PDF pages"** in AI Settings AND clicked **"I understand"** on the one-time consent dialog.
+
+If any condition fails, the vision sub-step is silently skipped and the deterministic regex/rule path produces the result, exactly as it did before. Failures during vision (rate-limit, malformed JSON, network) **degrade gracefully** to regex-only — they never fail the whole pipeline.
+
+### Vision capability table
+
+| Provider | Vision-capable models (matching patterns) |
+| --- | --- |
+| OpenAI    | `gpt-4o*`, `gpt-4.1*`, `gpt-4-turbo`, `gpt-4-vision*`, `o1*`, `o3*`, `o4*`, `chatgpt-4o*`, anything containing `vision` |
+| Anthropic | `claude-3*` (3, 3.5, 3.7), `claude-sonnet*`, `claude-opus*`, `claude-haiku*` |
+| Azure     | OpenAI patterns matched against your deployment name. Custom deployment names are reported as **Capability unknown** — vision will be attempted but may fail. |
+| Ollama    | `llava*`, `bakllava*`, `moondream*`, `minicpm*`, `llama3.2-vision*`, anything containing `vision` |
+
+### Caps and budgets
+
+| Setting | Default | Hard cap | Notes |
+| --- | --- | --- | --- |
+| Pages per run | 6 | 50 | User-configurable in AI Settings → Max pages |
+| Long-edge pixels | 1600 | n/a | Keeps payload size manageable |
+| JPEG quality | 0.85 | n/a | Quality vs token-spend trade-off |
+| Total bytes per run | ~18 MB | n/a | Hard byte budget across the run |
+| Per-page request timeout | 60 s (text) / 120 s (vision) | n/a | Prevents hung tabs |
+| Retry on 429 / 5xx | up to 2 retries with jittered backoff | n/a | **No retry on 401/403** — opens AI Settings instead |
+
+### What is sent for vision, what is not
+
+| Sent | Not sent |
+| --- | --- |
+| Up to N rasterized PDF pages (JPEG) | The original PDF file itself |
+| The fact-extraction system prompt | The file path, hostname, partner email |
+| A JSON-only schema describing the expected fields | Pages above your max-pages cap |
+| Your API key in the auth header your provider requires | Anything to Plan-Examiner servers (we don't have any) |
+
+### Revoking vision consent
+
+Open **AI Settings → Revoke vision consent**. The next vision run will re-prompt you. Toggling **Use AI vision** off in AI Settings disables vision without revoking consent for future runs.
 
 ---
 
@@ -113,7 +170,9 @@ Plan-Examiner works **fully offline** without an LLM — the rule engine is dete
 
 The only outbound requests are:
 - To CDN for font and library assets (Font Awesome, pdf.js, mammoth.js, Tailwind) on first load.
-- To your configured LLM provider **only when you have added an API key** and triggered a summarization or chat action.
+- To your configured LLM provider **only when you have added an API key** and triggered a summarization, chat, or vision action. The bridge talks directly from your browser to your provider — Plan-Examiner has no proxy or backend.
+- LLM requests are sent with `referrerPolicy: 'no-referrer'`, `cache: 'no-store'`, and `credentials: 'omit'`. Each provider receives only the auth header it requires (`Authorization`, `x-api-key`, or `api-key`) — there is no cross-provider header leakage.
+- API keys, `Authorization`, `x-api-key`, `Bearer`/`Basic` tokens, and image bytes are **redacted** from the verbose log buffer and downloaded `.log` files at the logger boundary — they never appear in exports.
 
 ---
 

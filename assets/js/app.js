@@ -148,11 +148,14 @@ PE.App = (function () {
   }
 
   function _updateLLMBadge() {
-    var badge = document.getElementById('llmBadge');
+    var badge = document.getElementById('aiSettingsBtn');
     if (!badge) return;
     if (PE.LLM && PE.LLM.isConfigured()) {
       var cfg = PE.LLM.getConfig();
-      badge.textContent = cfg.provider + ':' + cfg.model.split('-').slice(0,2).join('-');
+      var modelLabel = (cfg.model || '').split('-').slice(0,2).join('-') || cfg.provider;
+      var cap = PE.LLM.visionCapability(cfg);
+      var visionTag = cfg.useVision && cap === 'vision' ? ' 👁' : '';
+      badge.textContent = 'AI: ' + cfg.provider + ' ' + modelLabel + visionTag;
       badge.style.background = 'rgba(52,211,153,.1)';
       badge.style.borderColor = 'rgba(52,211,153,.3)';
       badge.style.color = '#34d399';
@@ -269,6 +272,23 @@ PE.App = (function () {
 
       var file     = fileInput.files[0];
       var formData = { buildingType: buildingType, buildingCode: buildingCode, city: city.trim(), state: state.trim(), country: country.trim() };
+
+      // Vision opt-in handshake. The pipeline already gates on consent, but
+      // we present the explicit "page images leave your browser" dialog
+      // here so the user can confirm BEFORE we open the modal and start
+      // rasterizing. If they decline, vision is suppressed for this run.
+      if (PE.LLM && PE.LLM.isConfigured()) {
+        var llmCfg = PE.LLM.getConfig() || {};
+        var pdfFile = /\.pdf$/i.test(file.name);
+        if (pdfFile && llmCfg.useVision && PE.LLM.isVisionCapable(llmCfg)) {
+          formData.useVision = true;
+          formData.maxVisionPages = llmCfg.maxVisionPages || PE.LLM.DEFAULT_MAX_VISION_PAGES;
+          if (!PE.LLM.hasVisionConsent()) {
+            var ok = await _requestVisionConsent(llmCfg.provider, formData.maxVisionPages);
+            if (!ok) formData.useVision = false; // user declined; pipeline will skip vision
+          }
+        }
+      }
 
       // Open modal and show pipeline tab
       openModal();
@@ -595,32 +615,52 @@ PE.App = (function () {
     if (clearBtn) clearBtn.addEventListener('click', function () {
       if (PE.LLM) PE.LLM.clearConfig();
       _updateLLMBadge();
-      document.getElementById('aiSaveStatus').textContent = 'Configuration cleared.';
-      document.getElementById('aiSaveStatus').style.color = '#fbbf24';
+      _populateAIForm();
+      _refreshAIDynamic();
+      var s = document.getElementById('aiSaveStatus');
+      if (s) { s.textContent = 'Configuration cleared.'; s.style.color = '#fbbf24'; }
     });
 
     if (form) form.addEventListener('submit', function (e) {
       e.preventDefault();
+      if (!PE.LLM) return;
       var provider = document.getElementById('llmProvider').value;
       var apiKey   = (document.getElementById('llmApiKey') || {}).value || '';
       var model    = (document.getElementById('llmModel') || {}).value || '';
       var baseUrl  = (document.getElementById('llmBaseUrl') || {}).value || '';
-      if (PE.LLM) {
-        var defaults = PE.LLM.DEFAULTS[provider] || {};
-        PE.LLM.setConfig({
-          provider: provider,
-          apiKey:   apiKey,
-          model:    model || defaults.model,
-          baseUrl:  baseUrl || defaults.baseUrl
-        });
-        _updateLLMBadge();
-        var status = document.getElementById('aiSaveStatus');
-        if (status) { status.textContent = '✓ Saved (key stored only in your browser)'; status.style.color = '#34d399'; }
-        setTimeout(closeAIModal, 1200);
+      var sessionOnly  = !!(document.getElementById('llmSessionOnly') || {}).checked;
+      var allowRemote  = !!(document.getElementById('llmOllamaAllowRemote') || {}).checked;
+      var useVision    = !!(document.getElementById('llmUseVision') || {}).checked;
+      var maxPages     = parseInt((document.getElementById('llmMaxVisionPages') || {}).value || '0', 10) || PE.LLM.DEFAULT_MAX_VISION_PAGES;
+
+      var defaults = PE.LLM.DEFAULTS[provider] || {};
+      var v = PE.LLM.validateBaseUrl(provider, baseUrl || defaults.baseUrl, { ollamaAllowRemote: allowRemote });
+      if (!v.ok) {
+        var u = document.getElementById('llmUrlWarn');
+        if (u) u.textContent = v.reason;
+        return;
       }
+      PE.LLM.setConfig({
+        provider: provider,
+        apiKey:   apiKey,
+        model:    model || defaults.model,
+        baseUrl:  v.url,
+        sessionOnly:       sessionOnly,
+        ollamaAllowRemote: allowRemote,
+        useVision:         useVision,
+        maxVisionPages:    Math.max(1, Math.min(maxPages, PE.LLM.HARD_MAX_VISION_PAGES))
+      });
+      _updateLLMBadge();
+      _refreshAIDynamic();
+      var status = document.getElementById('aiSaveStatus');
+      if (status) {
+        status.textContent = '✓ Saved (key stored only in your ' + (sessionOnly ? 'session' : 'browser') + ')';
+        status.style.color = '#34d399';
+      }
+      setTimeout(closeAIModal, 1200);
     });
 
-    // Provider change → prefill defaults
+    // Provider change → prefill defaults & refresh dynamic UI
     var providerSel = document.getElementById('llmProvider');
     if (providerSel) providerSel.addEventListener('change', function () {
       if (!PE.LLM) return;
@@ -629,24 +669,182 @@ PE.App = (function () {
       var urlInput   = document.getElementById('llmBaseUrl');
       if (modelInput && def.model)   modelInput.placeholder = def.model;
       if (urlInput   && def.baseUrl) urlInput.value = def.baseUrl;
+      _refreshAIDynamic();
+    });
+
+    // Live updates as the user edits.
+    ['llmModel', 'llmApiKey', 'llmBaseUrl', 'llmOllamaAllowRemote'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input',  _refreshAIDynamic);
+      if (el) el.addEventListener('change', _refreshAIDynamic);
+    });
+
+    // Show/hide the API key.
+    var keyToggle = document.getElementById('llmKeyToggle');
+    if (keyToggle) keyToggle.addEventListener('click', function () {
+      var inp = document.getElementById('llmApiKey');
+      if (!inp) return;
+      var pressed = keyToggle.getAttribute('aria-pressed') === 'true';
+      inp.type = pressed ? 'password' : 'text';
+      keyToggle.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+      var ico = keyToggle.querySelector('i');
+      if (ico) ico.className = pressed ? 'fas fa-eye text-xs' : 'fas fa-eye-slash text-xs';
+    });
+
+    // Test connection.
+    var testBtn = document.getElementById('llmTestBtn');
+    if (testBtn) testBtn.addEventListener('click', async function () {
+      var status = document.getElementById('llmTestStatus');
+      if (!status || !PE.LLM) return;
+      status.textContent = 'Pinging…';
+      status.style.color = '#94a3b8';
+      try {
+        // Ensure latest form state is saved before testing.
+        var provider = document.getElementById('llmProvider').value;
+        var apiKey   = (document.getElementById('llmApiKey') || {}).value || '';
+        var model    = (document.getElementById('llmModel') || {}).value || '';
+        var baseUrl  = (document.getElementById('llmBaseUrl') || {}).value || '';
+        var defaults = PE.LLM.DEFAULTS[provider] || {};
+        var v = PE.LLM.validateBaseUrl(provider, baseUrl || defaults.baseUrl, { ollamaAllowRemote: !!(document.getElementById('llmOllamaAllowRemote') || {}).checked });
+        if (!v.ok) throw new Error(v.reason);
+        var prev = PE.LLM.getConfig();
+        PE.LLM.setConfig({ provider: provider, apiKey: apiKey, model: model || defaults.model, baseUrl: v.url, sessionOnly: !!(document.getElementById('llmSessionOnly') || {}).checked });
+        var r = await PE.LLM.ping();
+        status.textContent = '✓ Reachable (' + r.ms + 'ms)';
+        status.style.color = '#34d399';
+        // Restore the user's previous saved state if they hadn't pressed Save.
+        if (prev) PE.LLM.setConfig(prev);
+      } catch (e) {
+        status.textContent = '✗ ' + (e.message || 'Failed');
+        status.style.color = '#f87171';
+      }
+    });
+
+    // Revoke vision consent.
+    var revokeBtn = document.getElementById('llmRevokeConsentBtn');
+    if (revokeBtn) revokeBtn.addEventListener('click', function () {
+      if (PE.LLM) PE.LLM.setVisionConsent(false);
+      _refreshAIDynamic();
+      var s = document.getElementById('aiSaveStatus');
+      if (s) { s.textContent = 'Vision consent revoked.'; s.style.color = '#fbbf24'; }
+    });
+
+    // Vision consent modal wiring.
+    var vcOverlay = document.getElementById('visionConsentOverlay');
+    if (vcOverlay) {
+      vcOverlay.addEventListener('click', function (e) { if (e.target === vcOverlay) _closeVisionConsent(false); });
+    }
+    var declineBtn = document.getElementById('visionConsentDecline');
+    if (declineBtn) declineBtn.addEventListener('click', function () { _closeVisionConsent(false); });
+    var acceptBtn  = document.getElementById('visionConsentAccept');
+    if (acceptBtn)  acceptBtn.addEventListener('click', function () {
+      if (PE.LLM) PE.LLM.setVisionConsent(true);
+      _closeVisionConsent(true);
     });
 
     // Pre-fill from saved config
     _populateAIForm();
+    _refreshAIDynamic();
   }
 
   function _populateAIForm() {
     if (!PE.LLM) return;
-    var cfg = PE.LLM.getConfig();
-    if (!cfg) return;
+    var cfg = PE.LLM.getConfig() || {};
     var p = document.getElementById('llmProvider');
     var k = document.getElementById('llmApiKey');
     var m = document.getElementById('llmModel');
     var u = document.getElementById('llmBaseUrl');
-    if (p && cfg.provider) p.value = cfg.provider;
-    if (k && cfg.apiKey)   k.value = cfg.apiKey;
-    if (m && cfg.model)    m.value = cfg.model;
-    if (u && cfg.baseUrl)  u.value = cfg.baseUrl;
+    var so = document.getElementById('llmSessionOnly');
+    var ar = document.getElementById('llmOllamaAllowRemote');
+    var uv = document.getElementById('llmUseVision');
+    var mp = document.getElementById('llmMaxVisionPages');
+    if (p)  p.value  = cfg.provider || 'openai';
+    if (k)  k.value  = cfg.apiKey   || '';
+    if (m)  m.value  = cfg.model    || '';
+    if (u)  u.value  = cfg.baseUrl  || '';
+    if (so) so.checked = !!cfg.sessionOnly;
+    if (ar) ar.checked = !!cfg.ollamaAllowRemote;
+    if (uv) uv.checked = !!cfg.useVision;
+    if (mp) mp.value   = cfg.maxVisionPages || PE.LLM.DEFAULT_MAX_VISION_PAGES;
+  }
+
+  // Re-render capability badge, URL warning, key shape warning, endpoint
+  // preview, and ollama-remote row whenever the form changes.
+  function _refreshAIDynamic() {
+    if (!PE.LLM) return;
+    var provider = (document.getElementById('llmProvider') || {}).value || 'openai';
+    var apiKey   = (document.getElementById('llmApiKey') || {}).value || '';
+    var model    = (document.getElementById('llmModel') || {}).value || '';
+    var baseUrl  = (document.getElementById('llmBaseUrl') || {}).value || '';
+    var allowRemote = !!(document.getElementById('llmOllamaAllowRemote') || {}).checked;
+    var defaults = PE.LLM.DEFAULTS[provider] || {};
+
+    // Show "allow remote" only for ollama.
+    var row = document.getElementById('ollamaRemoteRow');
+    if (row) row.style.display = provider === 'ollama' ? '' : 'none';
+
+    // Capability badge (vision / text / unknown).
+    var capEl = document.getElementById('llmCapability');
+    if (capEl) {
+      var cap = PE.LLM.visionCapability({ provider: provider, model: model || defaults.model });
+      if (cap === 'vision') {
+        capEl.innerHTML = '<i class="fas fa-circle-check mr-1" aria-hidden="true"></i>Vision-capable';
+        capEl.style.color = '#34d399';
+      } else if (cap === 'unknown') {
+        capEl.innerHTML = '<i class="fas fa-circle-question mr-1" aria-hidden="true"></i>Capability unknown for this deployment — vision may or may not work';
+        capEl.style.color = '#fbbf24';
+      } else {
+        capEl.innerHTML = '<i class="fas fa-circle-exclamation mr-1" aria-hidden="true"></i>Text-only model — vision pass will be skipped';
+        capEl.style.color = '#fbbf24';
+      }
+    }
+
+    // Key shape warning.
+    var w = document.getElementById('llmKeyWarn');
+    if (w) {
+      var ksw = PE.LLM.keyShapeWarning(provider, apiKey);
+      w.textContent = ksw || '';
+    }
+
+    // URL validation.
+    var uw = document.getElementById('llmUrlWarn');
+    if (uw) {
+      if (!baseUrl && (provider === 'openai' || provider === 'anthropic')) {
+        uw.textContent = '';
+      } else {
+        var v = PE.LLM.validateBaseUrl(provider, baseUrl || defaults.baseUrl, { ollamaAllowRemote: allowRemote });
+        uw.textContent = v.ok ? '' : v.reason;
+      }
+    }
+
+    // Endpoint preview.
+    var ep = document.getElementById('aiEndpointPreview');
+    if (ep) {
+      var eps = PE.LLM.describeEndpoints({ provider: provider, baseUrl: baseUrl || defaults.baseUrl, model: model || defaults.model });
+      ep.textContent = eps.length ? 'Outbound: ' + eps.join(', ') : '';
+    }
+  }
+
+  // Vision consent helpers.
+  // Returns a Promise<boolean> resolving to true if the user accepted.
+  function _requestVisionConsent(provider, maxPages) {
+    return new Promise(function (resolve) {
+      var overlay = document.getElementById('visionConsentOverlay');
+      if (!overlay) { resolve(false); return; }
+      var p = document.getElementById('vcProvider');
+      var n = document.getElementById('vcPageCount');
+      if (p) p.textContent = provider || 'your provider';
+      if (n) n.textContent = String(maxPages || (PE.LLM ? PE.LLM.DEFAULT_MAX_VISION_PAGES : 6));
+      _visionConsentResolver = resolve;
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    });
+  }
+  var _visionConsentResolver = null;
+  function _closeVisionConsent(accepted) {
+    var overlay = document.getElementById('visionConsentOverlay');
+    if (overlay) { overlay.classList.remove('active'); document.body.style.overflow = ''; }
+    if (_visionConsentResolver) { _visionConsentResolver(!!accepted); _visionConsentResolver = null; }
   }
 
   function openAIModal() {

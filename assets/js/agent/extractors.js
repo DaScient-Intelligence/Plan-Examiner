@@ -154,6 +154,185 @@ PE.Extractors = (function () {
     return out;
   }
 
+  // ── PDF rasterization (for AI vision) ─────────────────────────────────
+  // Render each requested page to a JPEG data URL, capped by long-edge
+  // pixels, JPEG quality, page count, and a total byte budget. Used by the
+  // optional vision sub-step in the pipeline; the regex/text path above
+  // remains the source of truth.
+  async function rasterizePdfPages(arrayBuffer, opts) {
+    if (!window.pdfjsLib) throw new Error('pdf.js not loaded');
+    opts = opts || {};
+    var maxEdgePx   = opts.maxEdgePx   || 1600;
+    var quality     = opts.quality     || 0.85;
+    var maxPages    = Math.max(1, Math.min(opts.maxPages || 6, opts.hardMax || 50));
+    var byteBudget  = opts.byteBudget  || (18 * 1024 * 1024);
+    var onProgress  = typeof opts.onProgress === 'function' ? opts.onProgress : function () {};
+    var signal      = opts.signal;
+
+    var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    var pageCount = Math.min(pdf.numPages, maxPages);
+    var images = [];
+    var totalBytes = 0;
+
+    for (var i = 0; i < pageCount; i++) {
+      if (signal && signal.aborted) throw new Error('Aborted');
+      onProgress({ stage: 'raster', page: i + 1, of: pageCount });
+
+      var page     = await pdf.getPage(i + 1);
+      var viewport = page.getViewport({ scale: 1 });
+      var longEdge = Math.max(viewport.width, viewport.height);
+      var scale    = longEdge > 0 ? Math.min(maxEdgePx / longEdge, 4) : 1;
+      var vp       = page.getViewport({ scale: scale });
+
+      var canvas, ctx;
+      if (typeof OffscreenCanvas !== 'undefined') {
+        canvas = new OffscreenCanvas(Math.ceil(vp.width), Math.ceil(vp.height));
+      } else {
+        canvas = document.createElement('canvas');
+        canvas.width  = Math.ceil(vp.width);
+        canvas.height = Math.ceil(vp.height);
+      }
+      ctx = canvas.getContext('2d');
+      // White background — JPEG has no alpha; matches a printed page.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+      var dataUrl;
+      if (typeof canvas.convertToBlob === 'function') {
+        var blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: quality });
+        dataUrl  = await _blobToDataUrl(blob);
+      } else {
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+      }
+
+      // Approximate byte size from base64 length.
+      var b64 = dataUrl.indexOf(',') >= 0 ? dataUrl.slice(dataUrl.indexOf(',') + 1) : dataUrl;
+      var bytes = Math.floor(b64.length * 3 / 4);
+      var hash  = await _hash(_b64ToArrayBuffer(b64));
+      _log('debug', 'rasterized page ' + (i + 1) + '/' + pageCount, {
+        page: i + 1, width: canvas.width, height: canvas.height,
+        bytes: bytes, mimeType: 'image/jpeg', sha256: hash
+        // Note: image bytes are NEVER logged.
+      });
+
+      if (totalBytes + bytes > byteBudget) {
+        _log('warn', 'vision byte budget reached; truncating at page ' + i, { totalBytes: totalBytes, budget: byteBudget });
+        break;
+      }
+      totalBytes += bytes;
+      images.push({ page: i + 1, dataUrl: dataUrl, bytes: bytes, width: canvas.width, height: canvas.height, sha256: hash });
+    }
+
+    return { images: images, totalBytes: totalBytes, totalPages: pdf.numPages, processedPages: images.length };
+  }
+
+  function _blobToDataUrl(blob) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload  = function () { resolve(reader.result); };
+      reader.onerror = function () { reject(reader.error || new Error('FileReader error')); };
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function _b64ToArrayBuffer(b64) {
+    try {
+      var bin = (typeof atob === 'function') ? atob(b64) : Buffer.from(b64, 'base64').toString('binary');
+      var len = bin.length, buf = new ArrayBuffer(len), view = new Uint8Array(buf);
+      for (var i = 0; i < len; i++) view[i] = bin.charCodeAt(i);
+      return buf;
+    } catch (e) { return new ArrayBuffer(0); }
+  }
+
+  // ── Vision/regex fact merge (the "hardening") ────────────────────────
+  //
+  // visionFacts is a normalized map (per PE.LLM.normalizeVisionFacts):
+  //   { factName: { value, confidence, evidence } }
+  //
+  // Returns:
+  //   { facts: <merged>, provenance: <map>, conflicts: <array> }
+  //
+  // - regex hit + vision agrees           → keep regex, source 'regex+vision'
+  // - regex hit + vision disagrees        → keep regex, mark conflict
+  // - regex miss + vision present         → use vision, source 'vision'
+  // - both miss                           → unchanged
+  function mergeVisionFacts(regexFacts, visionFacts, opts) {
+    opts = opts || {};
+    var runId = opts.runId || ('run-' + Date.now());
+    var model = opts.model || 'unknown';
+    var page  = opts.page  || null;
+
+    regexFacts = regexFacts || {};
+    visionFacts = visionFacts || {};
+
+    var merged    = Object.assign({}, regexFacts);
+    var provenance = {};
+    var conflicts = [];
+
+    // Build provenance for every regex-derived fact already present.
+    Object.keys(regexFacts).forEach(function (k) {
+      if (regexFacts[k] === null || regexFacts[k] === undefined) return;
+      provenance[k] = { source: 'regex', value: regexFacts[k], confidence: 1.0, runId: runId };
+    });
+
+    Object.keys(visionFacts).forEach(function (name) {
+      var v = visionFacts[name];
+      if (!v || v.value === undefined || v.value === null) return;
+      var rVal = regexFacts[name];
+      var rPresent = rVal !== undefined && rVal !== null;
+
+      if (!rPresent) {
+        merged[name] = v.value;
+        provenance[name] = {
+          source: 'vision', value: v.value, confidence: v.confidence,
+          evidence: v.evidence, page: page, model: model, runId: runId
+        };
+        return;
+      }
+
+      // Both present — agree?
+      var agree = _factsEqual(rVal, v.value, name);
+      if (agree) {
+        provenance[name] = {
+          source: 'regex+vision', value: rVal,
+          confidence: Math.min(1, 0.7 + 0.3 * (v.confidence || 0)),
+          evidence: v.evidence, page: page, model: model, runId: runId
+        };
+        return;
+      }
+      // Disagreement — keep regex but record conflict for the rule engine.
+      provenance[name] = {
+        source: 'regex', value: rVal, confidence: 0.7,
+        conflict: { visionValue: v.value, visionConfidence: v.confidence, evidence: v.evidence, page: page, model: model },
+        runId: runId
+      };
+      conflicts.push({
+        factName:  name,
+        regexValue: rVal,
+        visionValue: v.value,
+        confidence: v.confidence,
+        evidence:   v.evidence,
+        page:       page
+      });
+    });
+
+    return { facts: merged, provenance: provenance, conflicts: conflicts };
+  }
+
+  function _factsEqual(a, b, name) {
+    if (typeof a === 'boolean' || typeof b === 'boolean') return Boolean(a) === Boolean(b);
+    if (typeof a === 'string'  && typeof b === 'string')  return a.trim().toLowerCase() === b.trim().toLowerCase();
+    var na = typeof a === 'number' ? a : parseFloat(a);
+    var nb = typeof b === 'number' ? b : parseFloat(b);
+    if (!isFinite(na) || !isFinite(nb)) return String(a) === String(b);
+    // Tolerate small reading discrepancies — 5% relative or 1 unit absolute.
+    var diff = Math.abs(na - nb);
+    var tol  = Math.max(1, Math.abs(na) * 0.05);
+    return diff <= tol;
+  }
+
   // ── DXF extraction ────────────────────────────────────────────────────
   //  Minimal DXF parser: extracts TEXT/MTEXT content and LINE lengths from
   //  the ENTITIES section to infer dimensional facts.
@@ -360,7 +539,12 @@ PE.Extractors = (function () {
     return raw;
   }
 
-  return { extract: extract, fromDxf: fromDxf, parse: parse, RULES: RULES, BOOL_FLAGS: BOOL_FLAGS };
+  return {
+    extract: extract, fromDxf: fromDxf, parse: parse,
+    rasterizePdfPages: rasterizePdfPages,
+    mergeVisionFacts:  mergeVisionFacts,
+    RULES: RULES, BOOL_FLAGS: BOOL_FLAGS
+  };
 
 }());
 

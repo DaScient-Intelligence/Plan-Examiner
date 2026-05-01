@@ -696,7 +696,7 @@
 
 <!-- AI SETTINGS MODAL -->
 <div class="modal-overlay" id="aiModalOverlay" role="dialog" aria-modal="true" aria-label="AI Settings">
-  <div class="modal-box" style="max-width:540px;">
+  <div class="modal-box" style="max-width:600px;">
     <div class="flex items-center justify-between p-6" style="border-bottom:1px solid rgba(255,255,255,.05);">
       <h2 class="font-display font-bold text-white text-lg flex items-center gap-3">
         <i class="fas fa-key" style="color:#38bdf8;" aria-hidden="true"></i> AI Settings
@@ -706,38 +706,103 @@
       </button>
     </div>
     <div class="p-6">
-      <div class="glass glass-accent rounded-xl p-4 mb-6">
-        <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-shield-halved mr-1.5" style="color:#34d399;" aria-hidden="true"></i><strong class="text-white">Privacy:</strong> Your API key is stored only in your browser's localStorage. It is never sent to Plan-Examiner servers.</p>
+      <div class="glass glass-accent rounded-xl p-4 mb-5">
+        <p class="text-xs" style="color:#94a3b8;"><i class="fas fa-shield-halved mr-1.5" style="color:#34d399;" aria-hidden="true"></i><strong class="text-white">Privacy:</strong> Your API key is stored only in your browser&rsquo;s storage. It is never sent to Plan-Examiner servers. The bridge talks <em>directly</em> from your browser to your chosen provider.</p>
+        <p class="text-xs mt-2" id="aiEndpointPreview" style="color:#475569;font-family:ui-monospace,monospace;"></p>
       </div>
       <form id="aiSettingsForm" class="space-y-4">
         <div>
           <label for="llmProvider" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Provider</label>
           <select id="llmProvider" class="pe-input">
-            <option value="openai">OpenAI (GPT-4o, GPT-4o-mini...)</option>
-            <option value="anthropic">Anthropic (Claude 3 Haiku, Sonnet...)</option>
+            <option value="openai">OpenAI (GPT-4o, GPT-4.1, o-series&hellip;)</option>
+            <option value="anthropic">Anthropic (Claude 3 / 3.5 Sonnet&hellip;)</option>
             <option value="azure">Azure OpenAI</option>
             <option value="ollama">Ollama (local, no key needed)</option>
           </select>
         </div>
         <div>
           <label for="llmApiKey" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">API Key <span style="color:#475569;">(not required for Ollama)</span></label>
-          <input type="password" id="llmApiKey" class="pe-input" placeholder="sk-..." autocomplete="off" />
-          <p class="text-xs mt-1" style="color:#475569;">Stored only in localStorage - never transmitted to Plan-Examiner.</p>
+          <div class="flex gap-2">
+            <input type="password" id="llmApiKey" class="pe-input flex-1" placeholder="sk-..." autocomplete="off" />
+            <button type="button" id="llmKeyToggle" class="btn-ghost" style="padding:0 14px;flex-shrink:0;" aria-label="Show or hide API key" aria-pressed="false">
+              <i class="fas fa-eye text-xs" aria-hidden="true"></i>
+            </button>
+          </div>
+          <p id="llmKeyWarn" class="text-xs mt-1" style="color:#fbbf24;min-height:1em;"></p>
+          <label class="flex items-center gap-2 mt-2 text-xs cursor-pointer" style="color:#94a3b8;">
+            <input type="checkbox" id="llmSessionOnly" />
+            <span>Session only (forget when this tab closes)</span>
+          </label>
         </div>
         <div>
           <label for="llmModel" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Model <span style="color:#475569;">(optional)</span></label>
           <input type="text" id="llmModel" class="pe-input" placeholder="gpt-4o-mini" />
+          <p id="llmCapability" class="text-xs mt-1" style="color:#64748b;min-height:1em;"></p>
         </div>
         <div>
           <label for="llmBaseUrl" class="block text-xs font-semibold uppercase tracking-wider mb-2" style="color:#94a3b8;">Base URL <span style="color:#475569;">(Azure / Ollama only)</span></label>
           <input type="url" id="llmBaseUrl" class="pe-input" placeholder="https://api.openai.com/v1" />
+          <p id="llmUrlWarn" class="text-xs mt-1" style="color:#f87171;min-height:1em;"></p>
+          <label class="flex items-center gap-2 mt-2 text-xs cursor-pointer" id="ollamaRemoteRow" style="color:#94a3b8;display:none;">
+            <input type="checkbox" id="llmOllamaAllowRemote" />
+            <span>Allow remote Ollama host (default: localhost only)</span>
+          </label>
         </div>
+
+        <div class="glass rounded-xl p-4" style="border:1px solid rgba(56,189,248,.18);">
+          <label class="flex items-start gap-2.5 cursor-pointer">
+            <input type="checkbox" id="llmUseVision" class="mt-1" />
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-white">Use AI vision on PDF pages</div>
+              <div class="text-xs mt-1" style="color:#94a3b8;">Sends rasterized page images to your provider so the model can read drawings the regex extractor can&rsquo;t. <strong style="color:#fbbf24;">Page images leave your browser.</strong> Requires a vision-capable model. Off by default.</div>
+            </div>
+          </label>
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <div>
+              <label for="llmMaxVisionPages" class="block text-xs font-semibold uppercase tracking-wider mb-1" style="color:#94a3b8;">Max pages</label>
+              <input type="number" id="llmMaxVisionPages" class="pe-input" min="1" max="50" placeholder="6" />
+            </div>
+            <div class="flex items-end">
+              <button type="button" id="llmRevokeConsentBtn" class="btn-ghost" style="padding:10px 14px;font-size:.75rem;width:100%;">Revoke vision consent</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 items-center">
+          <button type="button" id="llmTestBtn" class="btn-ghost" style="padding:10px 16px;font-size:.8rem;flex-shrink:0;"><i class="fas fa-bolt text-xs mr-1" aria-hidden="true"></i>Test connection</button>
+          <p id="llmTestStatus" class="text-xs flex-1" style="color:#64748b;min-height:1em;"></p>
+        </div>
+
         <p id="aiSaveStatus" class="text-xs" style="color:#64748b;min-height:1em;"></p>
         <div class="flex gap-3">
           <button type="submit" class="btn-accent flex-1 justify-center" style="padding:12px;"><i class="fas fa-floppy-disk text-xs" aria-hidden="true"></i> Save Configuration</button>
           <button type="button" id="clearLLMBtn" class="btn-ghost" style="padding:12px 20px;" aria-label="Clear configuration"><i class="fas fa-trash-can text-xs" aria-hidden="true"></i></button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- VISION CONSENT MODAL (one-time) -->
+<div class="modal-overlay" id="visionConsentOverlay" role="dialog" aria-modal="true" aria-labelledby="visionConsentTitle">
+  <div class="modal-box" style="max-width:540px;">
+    <div class="flex items-center justify-between p-6" style="border-bottom:1px solid rgba(255,255,255,.05);">
+      <h2 id="visionConsentTitle" class="font-display font-bold text-white text-lg flex items-center gap-3">
+        <i class="fas fa-eye" style="color:#fbbf24;" aria-hidden="true"></i> Confirm: AI vision on PDF pages
+      </h2>
+    </div>
+    <div class="p-6 space-y-4">
+      <p class="text-sm" style="color:#cbd5e1;">Plan-Examiner will rasterize the first <span id="vcPageCount">6</span> page(s) of your PDF and send them as images to <strong id="vcProvider" style="color:#38bdf8;">your provider</strong>. This is an additive AI pass on top of the deterministic regex/rule engine.</p>
+      <ul class="text-xs space-y-1.5" style="color:#94a3b8;list-style:disc;padding-left:1.25rem;">
+        <li>Sent: rasterized page images (JPEG, ~1600 px on the long edge), system prompt, JSON-only schema.</li>
+        <li>Not sent: the source file itself, file path, hostname, partner email, other pages above your cap.</li>
+        <li>Your API key goes only in the auth header your provider requires.</li>
+        <li>You can revoke consent at any time from <em>AI Settings &rarr; Revoke vision consent</em>.</li>
+      </ul>
+      <div class="flex gap-2 pt-2">
+        <button type="button" id="visionConsentDecline" class="btn-ghost flex-1" style="padding:11px;">Cancel</button>
+        <button type="button" id="visionConsentAccept" class="btn-accent flex-1" style="padding:11px;">I understand &mdash; enable vision</button>
+      </div>
     </div>
   </div>
 </div>
