@@ -248,15 +248,81 @@ PE.Pipeline = (function () {
     emit('classify', 'done', classifyDetail);
     _stepLog('classify', 'done', classifyDetail, { durationMs: Math.round(_now() - sT0), buildingType: facts.buildingType, useGroup: useGroup });
 
-    // ── Step 3: Extract Facts ─────────────────────────────────────
+    // ── Step 3: Extract Facts (regex + optional AI vision) ────────
     sT0 = _now();
     emit('extract', 'running', 'Pulling dimensional data and feature flags…');
     _stepLog('extract', 'running');
     await _tick();
+
+    // Optional AI vision sub-step. Strictly additive: the deterministic
+    // regex/rule path above is the source of truth — vision merges only
+    // fills gaps and surfaces conflicts as REVIEW findings.
+    var visionStatus = 'skipped';
+    var visionReason = null;
+    var visionResult = null;
+    try {
+      var visionCfg  = _resolveVisionGate(extraction, formData);
+      visionStatus   = visionCfg.status;
+      visionReason   = visionCfg.reason;
+      if (visionCfg.run) {
+        emit('extract', 'running', 'AI vision: rasterizing pages…');
+        _stepLog('extract', 'running', 'vision raster start', { maxPages: visionCfg.maxPages });
+        var arrayBuf = await file.arrayBuffer();
+        var raster = await PE.Extractors.rasterizePdfPages(arrayBuf, {
+          maxPages:   visionCfg.maxPages,
+          hardMax:    PE.LLM.HARD_MAX_VISION_PAGES,
+          byteBudget: PE.LLM.TOTAL_VISION_BYTE_BUDGET,
+          signal:     formData.abortSignal,
+          onProgress: function (p) {
+            emit('extract', 'running', 'AI vision: page ' + p.page + '/' + p.of + ' rasterized');
+          }
+        });
+        emit('extract', 'running', 'AI vision: querying ' + (PE.LLM.getConfig().model || '(default)') + ' on ' + raster.images.length + ' page(s)…');
+        _stepLog('extract', 'running', 'vision request', { pages: raster.images.length, totalBytes: raster.totalBytes });
+        var dataUrls = raster.images.map(function (img) { return img.dataUrl; });
+        var visionFactsRaw = await PE.LLM.extractFactsFromImages(dataUrls, {
+          pageInfo: 'pages 1-' + raster.images.length,
+          signal:   formData.abortSignal
+        });
+        var merge = PE.Extractors.mergeVisionFacts(facts, visionFactsRaw, {
+          runId: 'pipe-' + Date.now(),
+          model: (PE.LLM.getConfig() || {}).model || 'unknown',
+          page:  null
+        });
+        facts = merge.facts;
+        result.facts = facts;
+        result.visionProvenance = merge.provenance;
+        result.visionConflicts  = merge.conflicts;
+        // Re-attach occupancyGroup / buildingType set by Classify step.
+        if (!facts.buildingType) facts.buildingType = formData.buildingType || 'Commercial';
+        if (!facts.occupancyGroup) facts.occupancyGroup = useGroup;
+        visionStatus = 'ok';
+        visionResult = { pages: raster.images.length, conflicts: merge.conflicts.length, factsAdded: Object.keys(visionFactsRaw).length };
+        if (L) L.info('pipeline', 'vision merge complete', visionResult);
+      } else {
+        if (L) L.debug('pipeline', 'vision skipped: ' + visionReason, { status: visionStatus });
+      }
+    } catch (visErr) {
+      // Graceful degradation: keep regex-only facts; never fail the pipeline.
+      visionStatus = 'failed';
+      visionReason = visErr && visErr.message ? visErr.message : String(visErr);
+      if (L) L.warn('pipeline', 'vision step failed; degrading to regex-only: ' + visionReason,
+        { code: visErr && visErr.code, status: visErr && visErr.status });
+      emit('extract', 'running', 'AI vision failed (' + visionReason + ') — continuing with regex facts.');
+    }
+    result.visionStatus = visionStatus;
+    if (visionReason) result.visionReason = visionReason;
+
     var extracted = Object.keys(facts).filter(function (k) { return facts[k] !== null && facts[k] !== undefined && !k.startsWith('_'); });
-    var extractDetail = extracted.length + ' fact(s) extracted: ' + extracted.slice(0, 5).join(', ') + (extracted.length > 5 ? '…' : '.');
+    var extractDetail = extracted.length + ' fact(s) extracted: ' + extracted.slice(0, 5).join(', ') + (extracted.length > 5 ? '…' : '.') +
+      (visionStatus === 'ok' ? ' (vision: +' + (visionResult ? visionResult.factsAdded : 0) + ', conflicts: ' + (visionResult ? visionResult.conflicts : 0) + ')' :
+       visionStatus === 'failed'  ? ' (vision: failed)' :
+       visionStatus === 'skipped' && visionReason ? ' (vision: ' + visionReason + ')' : '');
     emit('extract', 'done', extractDetail);
-    _stepLog('extract', 'done', extractDetail, { durationMs: Math.round(_now() - sT0), factsCount: extracted.length, factKeys: extracted });
+    _stepLog('extract', 'done', extractDetail, {
+      durationMs: Math.round(_now() - sT0), factsCount: extracted.length, factKeys: extracted,
+      visionStatus: visionStatus, visionReason: visionReason || null
+    });
     result.facts = facts;
 
     // ── Step 4: Select Rules ──────────────────────────────────────
@@ -288,6 +354,26 @@ PE.Pipeline = (function () {
     var placeholders = getStoredPlaceholders();
     if (L) L.debug('pipeline', 'placeholders applied', placeholders);
     var findings = PE.RuleEngine.evaluate(facts, packs, facts.buildingType, { placeholders: placeholders });
+    // Append REVIEW findings for any vision↔regex conflicts so the user
+    // sees them in the Findings panel without overriding the deterministic
+    // checks above.
+    if (result.visionConflicts && result.visionConflicts.length) {
+      result.visionConflicts.forEach(function (c) {
+        findings.push({
+          id:           'vision-conflict/' + c.factName,
+          status:       'REVIEW',
+          label:        'Vision/text disagreement: ' + c.factName,
+          note:         'Regex extracted "' + c.regexValue + '" but AI vision saw "' + c.visionValue + '" (confidence ' + (c.confidence || 0).toFixed(2) + ')' +
+                        (c.evidence ? ' — evidence: ' + c.evidence : '') + '. Verify the value on the source plan.',
+          remediation:  'Confirm the correct value on the plan and update the title block / code summary if needed.',
+          code_section: 'N/A',
+          citation:     null,
+          factName:     c.factName,
+          weight:       0
+        });
+      });
+      if (L) L.info('pipeline', 'added ' + result.visionConflicts.length + ' vision-conflict REVIEW finding(s)', { conflicts: result.visionConflicts.length });
+    }
     var compScore = PE.RuleEngine.score(findings);
     result.findings = findings;
     result.score    = compScore;
@@ -347,6 +433,35 @@ PE.Pipeline = (function () {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Decide whether to run the optional AI-vision sub-step. Returns:
+   *   { run: <bool>, status: 'pending'|'skipped', reason: <msg>, maxPages: <n> }
+   * Vision is gated on:
+   *   1. file is a PDF
+   *   2. PE.LLM is configured
+   *   3. configured model is vision-capable (per VISION_MODELS)
+   *   4. user has explicitly opted in (cfg.useVision OR formData.useVision)
+   *   5. user has acknowledged the vision consent banner
+   */
+  function _resolveVisionGate(extraction, formData) {
+    formData = formData || {};
+    if (!PE.LLM)                            return { run: false, status: 'skipped', reason: 'LLM bridge unavailable' };
+    if (!extraction || extraction.source !== 'pdf')
+                                            return { run: false, status: 'skipped', reason: 'not a PDF' };
+    if (!PE.LLM.isConfigured())             return { run: false, status: 'skipped', reason: 'LLM not configured' };
+    var cfg = PE.LLM.getConfig() || {};
+    var explicit = (formData.useVision === true) || (cfg.useVision === true);
+    if (!explicit)                          return { run: false, status: 'skipped', reason: 'vision toggle off' };
+    if (!PE.LLM.isVisionCapable(cfg))       return { run: false, status: 'skipped', reason: 'model "' + (cfg.model || '') + '" is not vision-capable' };
+    if (!PE.LLM.hasVisionConsent())         return { run: false, status: 'skipped', reason: 'vision consent not given' };
+
+    var maxPages = parseInt(formData.maxVisionPages || cfg.maxVisionPages || PE.LLM.DEFAULT_MAX_VISION_PAGES, 10);
+    if (!isFinite(maxPages) || maxPages < 1) maxPages = PE.LLM.DEFAULT_MAX_VISION_PAGES;
+    if (maxPages > PE.LLM.HARD_MAX_VISION_PAGES) maxPages = PE.LLM.HARD_MAX_VISION_PAGES;
+
+    return { run: true, status: 'pending', reason: null, maxPages: maxPages };
+  }
 
   function _tick() {
     return new Promise(function (r) { setTimeout(r, 80); });

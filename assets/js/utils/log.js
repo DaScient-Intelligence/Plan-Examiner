@@ -101,7 +101,7 @@ PE.Log = (function () {
       elapsedMs: _elapsed(),
       level:     level,
       stage:     stage || 'app',
-      msg:       String(msg == null ? '' : msg),
+      msg:       _redactString(String(msg == null ? '' : msg)),
       data:      data === undefined ? null : _safeClone(data)
     };
 
@@ -131,21 +131,48 @@ PE.Log = (function () {
     }
   }
 
+  // Defense-in-depth: any field whose key matches one of these patterns
+  // (case-insensitive) is replaced with '[redacted]' before recording.
+  // This protects against accidental leaks of API keys, tokens, or auth
+  // headers that callers may stuff into a log payload.
+  var SENSITIVE_KEY_RE = /^(?:apikey|api[-_ ]?key|authorization|x[-_ ]?api[-_ ]?key|bearer|(?:access[-_ ]?)?token|secret|password|cookie|set[-_ ]?cookie|session(?:[-_ ]?id)?)$/i;
+
+  // Strings that look like Bearer/Basic auth headers or obvious key prefixes
+  // are redacted regardless of field name. Conservative: only matches
+  // unmistakable shapes so legitimate plan content isn't corrupted.
+  var SENSITIVE_VALUE_RES = [
+    /\bBearer\s+[A-Za-z0-9._\-+/=]{8,}/gi,
+    /\bBasic\s+[A-Za-z0-9+/=]{8,}/gi
+  ];
+
+  function _redactString(s) {
+    if (typeof s !== 'string' || !s) return s;
+    var out = s;
+    for (var i = 0; i < SENSITIVE_VALUE_RES.length; i++) {
+      out = out.replace(SENSITIVE_VALUE_RES[i], '[redacted]');
+    }
+    return out;
+  }
+
   // Defensive deep-ish clone for the buffer so later mutation doesn't
   // change recorded payloads. Keeps it cheap: no functions, no DOM nodes.
+  // Also redacts any field whose key looks like a credential.
   function _safeClone(v) {
     if (v === null || v === undefined) return v;
     var t = typeof v;
-    if (t === 'string' || t === 'number' || t === 'boolean') return v;
+    if (t === 'string') return _redactString(v);
+    if (t === 'number' || t === 'boolean') return v;
     if (t === 'function') return '[function]';
-    if (v instanceof Error) return { name: v.name, message: v.message, stack: v.stack };
+    if (v instanceof Error) return { name: v.name, message: _redactString(v.message), stack: _redactString(v.stack || '') };
     try {
       return JSON.parse(JSON.stringify(v, function (k, val) {
+        if (k && SENSITIVE_KEY_RE.test(String(k))) return '[redacted]';
         if (val instanceof ArrayBuffer) return '[ArrayBuffer ' + val.byteLength + ' bytes]';
         if (typeof Blob !== 'undefined' && val instanceof Blob)   return '[Blob ' + val.size + ' bytes ' + val.type + ']';
         if (typeof File !== 'undefined' && val instanceof File)   return '[File ' + val.name + ' ' + val.size + ' bytes]';
         if (typeof Node !== 'undefined' && val instanceof Node)   return '[DOM Node]';
         if (typeof val === 'function') return '[function]';
+        if (typeof val === 'string')   return _redactString(val);
         return val;
       }));
     } catch (e) {
