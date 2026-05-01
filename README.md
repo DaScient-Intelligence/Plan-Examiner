@@ -6,7 +6,7 @@
 [![CI](https://github.com/DaScient/Plan-Examiner/actions/workflows/ci.yml/badge.svg)](https://github.com/DaScient/Plan-Examiner/actions/workflows/ci.yml)
 [![License](https://img.shields.io/github/license/DaScient/Plan-Examiner)](LICENSE)
 
-**[🔗 Live Demo →](https://dascient.github.io/Plan-Examiner)**
+**[🔗 Live Demo →](https://dascient-intelligence.github.io/Plan-Examiner)**
 
 Plan-Examiner is an agentic compliance reviewer that checks architectural drawings against building codes — IBC, ADA, and NFPA — and produces scored findings, citations, and correction letters. All document parsing and rule evaluation runs **client-side** in the browser. Nothing is uploaded to a server.
 
