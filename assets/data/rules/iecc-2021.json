@@ -1,0 +1,89 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "iecc-2021",
+  "name": "International Energy Conservation Code 2021",
+  "version": "2021",
+  "category": "energy",
+  "tags": ["energy", "envelope", "insulation", "lighting", "mechanical"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
+  "applies_to": ["Commercial", "Residential", "Institutional"],
+  "source_authority": "International Code Council (ICC)",
+  "source_url": "https://codes.iccsafe.org/content/IECC2021P2",
+  "license": "reference-only",
+  "copyright_notice": "International Energy Conservation Code® 2021 © 2021 International Code Council, Inc.",
+  "placeholders": {
+    "climate_zone": {
+      "type": "enum",
+      "default": "4A",
+      "options": ["1A", "2A", "2B", "3A", "3B", "3C", "4A", "4B", "4C", "5A", "5B", "5C", "6A", "6B", "7", "8"],
+      "label": "IECC Climate Zone",
+      "description": "Climate zone is the central scoping variable for envelope, fenestration, and equipment requirements.",
+      "group": "Energy"
+    },
+    "compliance_path": {
+      "type": "enum",
+      "default": "Prescriptive",
+      "options": ["Prescriptive", "Performance", "ERI"],
+      "label": "Compliance Path",
+      "description": "IECC permits prescriptive, performance (building energy cost or load), or ERI (Energy Rating Index) for residential.",
+      "group": "Energy"
+    }
+  },
+  "rules": [
+    {
+      "id": "IECC-C402",
+      "code_section": "IECC 2021 §C402",
+      "category": "energy",
+      "severity": "high",
+      "label": "Commercial Building Envelope (Prescriptive)",
+      "applies_to": ["Commercial", "Institutional"],
+      "applies_when": "placeholders.compliance_path == 'Prescriptive'",
+      "check_fn": "manual",
+      "tags": ["envelope"],
+      "notes_template": "Verify envelope insulation and fenestration U-factors/SHGC per Tables C402.1.3 and C402.4 for the project's climate zone ({{placeholders.climate_zone}}).",
+      "citation": "IECC 2021 §C402 / Tables C402.1.3, C402.4 – Commercial envelope opaque assembly R/U values and fenestration U/SHGC by climate zone.",
+      "remediation": "Tabulate proposed envelope assemblies and fenestration; demonstrate compliance with C402.1.3 / C402.4."
+    },
+    {
+      "id": "IECC-C405",
+      "code_section": "IECC 2021 §C405",
+      "category": "energy",
+      "severity": "medium",
+      "label": "Lighting Power & Controls",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["lighting"],
+      "notes_template": "Verify interior LPDs (Table C405.3.2(1)) and required lighting controls (occupancy sensors, daylighting, exterior, and parking-garage controls).",
+      "citation": "IECC 2021 §C405 – Limits on interior and exterior lighting power and required lighting controls.",
+      "remediation": "Provide an LPD compliance form and a controls schedule; ensure mandatory controls are shown on lighting plans."
+    },
+    {
+      "id": "IECC-R402",
+      "code_section": "IECC 2021 §R402",
+      "category": "energy",
+      "severity": "high",
+      "label": "Residential Envelope (Prescriptive)",
+      "applies_to": ["Residential"],
+      "applies_when": "placeholders.compliance_path == 'Prescriptive'",
+      "check_fn": "manual",
+      "tags": ["envelope", "residential"],
+      "notes_template": "Verify R-values and U/SHGC per Table R402.1.3 / R402.1.2 for climate zone {{placeholders.climate_zone}}.",
+      "citation": "IECC 2021 §R402 – Residential envelope component values by climate zone.",
+      "remediation": "Submit an R-value/U-factor schedule and a REScheck (or equivalent) compliance report."
+    },
+    {
+      "id": "IECC-R402.4",
+      "code_section": "IECC 2021 §R402.4",
+      "category": "energy",
+      "severity": "medium",
+      "label": "Air Leakage – Residential",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["envelope", "residential", "air-sealing"],
+      "notes_template": "Verify residential air-leakage testing: dwellings shall test ≤ 5.0 ACH50 (CZ 1–2) or ≤ 3.0 ACH50 (CZ 3–8) per §R402.4.1.2.",
+      "citation": "IECC 2021 §R402.4.1.2 – Air-leakage testing thresholds by climate zone.",
+      "remediation": "Schedule a blower-door test by a certified rater; provide the test report at C/O."
+    }
+  ]
+}

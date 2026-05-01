@@ -319,60 +319,290 @@ PE.RuleEngine = (function () {
       if (required && hasAlarm === false) return { status: 'FLAGGED', note: 'Fire alarm system required (load ' + load + ', area ' + area + ' sq ft) but not indicated on plans.' };
       if (required && hasAlarm === true) return { status: 'PASS', note: 'Fire alarm indicated; verify NFPA 72 compliance per NFPA 101 §9.6.' };
       return { status: 'REVIEW', note: 'Fire alarm likely required — verify NFPA 72-compliant system on plans.' };
+    },
+
+    // ── Generic v3 checks ──────────────────────────────────────────────
+    // `manual` — explicit reviewer-attention rule. Uses notes_template if present.
+    manual: function (facts, params, ctx) {
+      var note = (ctx && ctx.renderedNote) ||
+        'Manual verification required — see citation for the applicable code section.';
+      return { status: 'REVIEW', note: note };
     }
   };
 
   // ── Public API ──────────────────────────────────────────────────────────
 
   /**
-   * Evaluate a set of rule packs against extracted facts.
-   * @param {Object} facts - Extracted plan facts
-   * @param {Array}  packs - Array of loaded rule-pack objects
-   * @param {string} buildingType - e.g. "Commercial"
-   * @returns {Array} Array of finding objects
+   * Resolve effective parameters for a rule given the current facts and
+   * pack-level placeholders. Honors `parameters_by` precedence:
+   *   default < occupancy.<group> < sprinklered.<bool> < construction.<type>
+   *           < stories.<bracket>
+   * The most-specific selector wins; selectors are merged on top of `default`.
+   * Falls back to the legacy flat `parameters` object when no `parameters_by`
+   * is present.
+   *
+   * Selectors recognized (string-equality or numeric-bracket):
+   *   default
+   *   occupancy.<A|B|E|F|H|I|M|R|S|U>
+   *   sprinklered.<true|false>
+   *   construction.<I-A|I-B|II-A|II-B|III-A|III-B|IV|V-A|V-B|...>
+   *   stories.lte.<n>  / stories.gte.<n>
+   *   <key>.<value>           — generic match against facts or placeholders
    */
-  function evaluate(facts, packs, buildingType) {
-    var results = [];
+  function resolveParameters(rule, facts, placeholders) {
+    if (!rule.parameters_by) return rule.parameters || {};
+    var pb = rule.parameters_by;
+    var ctx = _buildContext(facts, placeholders);
+    var merged = Object.assign({}, pb['default'] || rule.parameters || {});
+    // Apply selectors in declared order so later ones win — except 'default'
+    // which is always the base.
+    Object.keys(pb).forEach(function (sel) {
+      if (sel === 'default') return;
+      if (_selectorMatches(sel, ctx)) {
+        merged = _shallowMerge(merged, pb[sel]);
+      }
+    });
+    return merged;
+  }
+
+  function _buildContext(facts, placeholders) {
+    facts = facts || {};
+    placeholders = placeholders || {};
+    var occ = (facts.occupancyGroup || facts.useGroup || '').toString().toUpperCase();
+    return {
+      facts: facts,
+      placeholders: placeholders,
+      occupancy: occ,
+      sprinklered: facts.hasSprinklers === true || placeholders.sprinklered === true,
+      construction: (facts.constructionType || placeholders.construction_type || '').toString(),
+      stories: facts.stories || 1
+    };
+  }
+
+  function _selectorMatches(sel, ctx) {
+    var parts = sel.split('.');
+    var key = parts[0];
+    if (parts.length === 2) {
+      var val = parts[1];
+      if (key === 'occupancy')    return ctx.occupancy === val.toUpperCase();
+      if (key === 'sprinklered')  return String(ctx.sprinklered) === val;
+      if (key === 'construction') return ctx.construction === val;
+      // Generic facts/placeholders match
+      if (ctx.facts[key] !== undefined)        return String(ctx.facts[key]) === val;
+      if (ctx.placeholders[key] !== undefined) return String(ctx.placeholders[key]) === val;
+      return false;
+    }
+    if (parts.length === 3 && key === 'stories') {
+      var op = parts[1], n = parseFloat(parts[2]);
+      if (op === 'lte') return ctx.stories <= n;
+      if (op === 'gte') return ctx.stories >= n;
+      if (op === 'lt')  return ctx.stories <  n;
+      if (op === 'gt')  return ctx.stories >  n;
+      if (op === 'eq')  return ctx.stories === n;
+    }
+    return false;
+  }
+
+  function _shallowMerge(a, b) {
+    var out = {};
+    Object.keys(a || {}).forEach(function (k) { out[k] = a[k]; });
+    Object.keys(b || {}).forEach(function (k) { out[k] = b[k]; });
+    return out;
+  }
+
+  /**
+   * Evaluate a whitelisted boolean expression against facts and placeholders.
+   * Supports: `facts.X`, `placeholders.X`, comparison operators (== != < <= > >=),
+   * boolean operators (&& || !), parentheses, numeric & string & boolean literals.
+   * Anything else is rejected — no `eval`, no `Function`, no property access
+   * outside the two safe roots.
+   * Returns true on parse failure (fail-open) so a malformed expression doesn't
+   * silently disable a rule.
+   */
+  function evaluateAppliesWhen(expr, facts, placeholders) {
+    if (!expr || typeof expr !== 'string') return true;
+    if (expr.length > 500) return true; // refuse pathological inputs
+    // Whitelist: only the safe character set + the words true/false/facts/placeholders
+    if (!/^[\sA-Za-z0-9_.()'"!=<>&|+\-*/?:,]+$/.test(expr)) return true;
+    // Forbid keywords that could break out of the sandbox
+    if (/(^|[^A-Za-z0-9_])(this|window|globalThis|constructor|prototype|Function|eval|require|import|process)([^A-Za-z0-9_]|$)/.test(expr)) return true;
+    // Tokenize identifiers and only allow facts.* / placeholders.* / true / false
+    var idents = expr.match(/[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*/g) || [];
+    for (var i = 0; i < idents.length; i++) {
+      var head = idents[i].split('.')[0];
+      if (head !== 'facts' && head !== 'placeholders' && head !== 'true' && head !== 'false' && head !== 'null') return true;
+    }
+    try {
+      // eslint-disable-next-line no-new-func
+      var fn = new Function('facts', 'placeholders', '"use strict"; return (' + expr + ');');
+      return !!fn(facts || {}, placeholders || {});
+    } catch (e) {
+      return true;
+    }
+  }
+
+  /**
+   * Render a Mustache-lite notes_template against a context object.
+   * Supports `{{key}}` substitution and `{{key.path}}` lookups. No conditionals,
+   * no loops, no helpers — keep it simple and safe.
+   */
+  function renderTemplate(tpl, context) {
+    if (!tpl || typeof tpl !== 'string') return '';
+    return tpl.replace(/\{\{\s*([A-Za-z0-9_.]+)\s*\}\}/g, function (_, path) {
+      var parts = path.split('.');
+      var v = context;
+      for (var i = 0; i < parts.length; i++) {
+        if (v === null || v === undefined) return '';
+        v = v[parts[i]];
+      }
+      if (v === null || v === undefined) return '';
+      return String(v);
+    });
+  }
+
+  /**
+   * Evaluate a set of rule packs against extracted facts.
+   * @param {Object} facts        - Extracted plan facts
+   * @param {Array}  packs        - Array of loaded rule-pack objects
+   * @param {string} buildingType - e.g. "Commercial"
+   * @param {Object} [opts]       - { placeholders: {...} } (optional)
+   * @returns {Array} Array of finding objects (deduplicated by alias group)
+   */
+  function evaluate(facts, packs, buildingType, opts) {
+    opts = opts || {};
+    var globalPlaceholders = opts.placeholders || {};
+    var raw = [];
 
     packs.forEach(function (pack) {
       if (!pack || !Array.isArray(pack.rules)) return;
+      // Merge pack-level placeholder defaults with user overrides for this pack.
+      var packPlaceholders = _placeholderDefaults(pack);
+      Object.keys(globalPlaceholders).forEach(function (k) {
+        if (globalPlaceholders[k] !== undefined && globalPlaceholders[k] !== null && globalPlaceholders[k] !== '') {
+          packPlaceholders[k] = globalPlaceholders[k];
+        }
+      });
 
       pack.rules.forEach(function (rule) {
-        if (!rule.applies_to.some(function (t) { return t === buildingType || t === 'Other'; })) return;
+        if (rule.disabled) return;
+        if (!rule.applies_to || !rule.applies_to.some(function (t) { return t === buildingType || t === 'Other'; })) return;
+        if (rule.applies_when && !evaluateAppliesWhen(rule.applies_when, facts, packPlaceholders)) return;
 
+        var params = resolveParameters(rule, facts, packPlaceholders);
         var checkFn = checks[rule.check_fn];
-        if (!checkFn) {
-          results.push({
-            id:          rule.id,
-            label:       rule.label,
-            category:    rule.category,
-            severity:    rule.severity,
-            status:      'REVIEW',
-            note:        'Check function not implemented — manual verification required.',
-            citation:    rule.citation,
-            remediation: rule.remediation,
-            code_section: rule.code_section
-          });
-          return;
+        var renderedNote = rule.notes_template
+          ? renderTemplate(rule.notes_template, { facts: facts, placeholders: packPlaceholders, params: params })
+          : '';
+
+        var outcome;
+        if (!rule.check_fn || rule.check_fn === 'manual') {
+          // Stub / deliberately-manual rule: surface as REVIEW with rich note.
+          outcome = checks.manual(facts, params, { renderedNote: renderedNote });
+        } else if (!checkFn) {
+          outcome = {
+            status: 'REVIEW',
+            note: renderedNote || ('Check function "' + rule.check_fn + '" not implemented in this build — manual verification required.')
+          };
+        } else {
+          try {
+            outcome = checkFn(facts, params, { rule: rule, placeholders: packPlaceholders, renderedNote: renderedNote });
+          } catch (e) {
+            outcome = { status: 'REVIEW', note: 'Rule evaluation error: ' + (e && e.message ? e.message : 'unknown') + ' — verify manually.' };
+          }
         }
 
-        var outcome = checkFn(facts, rule.parameters || {});
-        results.push({
-          id:          rule.id,
-          label:       rule.label,
-          category:    rule.category,
-          severity:    rule.severity,
-          status:      outcome.status,
-          note:        outcome.note || '',
-          citation:    rule.citation,
-          remediation: rule.remediation,
-          code_section: rule.code_section
+        // Coverage hint: mark REVIEW notes when evidence_keys are missing entirely.
+        if (outcome.status === 'REVIEW' && Array.isArray(rule.evidence_keys) && rule.evidence_keys.length) {
+          var missing = rule.evidence_keys.filter(function (k) {
+            return facts[k] === undefined || facts[k] === null || facts[k] === '';
+          });
+          if (missing.length === rule.evidence_keys.length) {
+            outcome.note = (outcome.note ? outcome.note + ' ' : '') +
+              '(Missing evidence: ' + missing.join(', ') + '.)';
+          }
+        }
+
+        raw.push({
+          id:           rule.id,
+          pack_id:      pack.id,
+          pack_name:    pack.name,
+          label:        rule.label,
+          category:     rule.category,
+          severity:     rule.severity || 'medium',
+          status:       outcome.status,
+          note:         outcome.note || '',
+          citation:     rule.citation || '',
+          remediation:  rule.remediation || '',
+          code_section: rule.code_section,
+          aliases:      rule.aliases || [],
+          references:   rule.references || [],
+          tags:         rule.tags || [],
+          experimental: !!rule.experimental,
+          source_url:   pack.source_url || '',
+          license:      pack.license || ''
         });
       });
     });
 
-    return results;
+    return _dedupeByAliases(raw);
   }
+
+  function _placeholderDefaults(pack) {
+    var out = {};
+    if (pack.placeholders && typeof pack.placeholders === 'object') {
+      Object.keys(pack.placeholders).forEach(function (k) {
+        var spec = pack.placeholders[k];
+        if (spec && spec.default !== undefined) out[k] = spec.default;
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Merge findings that point at the same logical requirement via `aliases`.
+   * Two findings collapse when the union of (rule.id ∪ rule.aliases) intersects.
+   * The most-severe status wins (FLAGGED > REVIEW > PASS); citations are stacked.
+   */
+  function _dedupeByAliases(findings) {
+    var groups = [];
+    var index = {};       // id → group index
+    findings.forEach(function (f) {
+      var keys = [f.id].concat(f.aliases || []);
+      var hit = -1;
+      for (var i = 0; i < keys.length; i++) {
+        if (index[keys[i]] !== undefined) { hit = index[keys[i]]; break; }
+      }
+      if (hit === -1) {
+        var g = { primary: f, members: [f] };
+        groups.push(g);
+        var gi = groups.length - 1;
+        keys.forEach(function (k) { index[k] = gi; });
+      } else {
+        groups[hit].members.push(f);
+        keys.forEach(function (k) { if (index[k] === undefined) index[k] = hit; });
+        // Promote to most-severe status / preserve original citation chain.
+        if (_statusRank(f.status) > _statusRank(groups[hit].primary.status)) {
+          groups[hit].primary = f;
+        }
+      }
+    });
+    return groups.map(function (g) {
+      if (g.members.length === 1) return g.primary;
+      var citations = g.members
+        .map(function (m) { return m.code_section ? (m.code_section + (m.note ? ': ' + m.note : '')) : ''; })
+        .filter(Boolean);
+      var stacked = Object.assign({}, g.primary, {
+        note:        g.primary.note,
+        stacked_citations: g.members.map(function (m) {
+          return { pack_id: m.pack_id, pack_name: m.pack_name, code_section: m.code_section, citation: m.citation };
+        }),
+        citation:    citations.join(' | ')
+      });
+      return stacked;
+    });
+  }
+
+  function _statusRank(s) { return s === 'FLAGGED' ? 3 : s === 'REVIEW' ? 2 : s === 'PASS' ? 1 : 0; }
 
   /**
    * Compute a compliance score 0–100 from an array of findings.
@@ -383,15 +613,50 @@ PE.RuleEngine = (function () {
     var total   = 0;
     var max     = 0;
     findings.forEach(function (f) {
+      if (f.experimental) return; // don't penalize stubs
       var sev = f.severity === 'critical' ? 3 : f.severity === 'high' ? 2 : 1;
       var w = (weights[f.status] || 0) * sev;
       total += w;
       max   += 3 * sev;
     });
+    if (!max) return 100;
     return Math.round(100 - (total / max) * 100);
   }
 
-  return { evaluate: evaluate, score: score };
+  /**
+   * Build a coverage report: which fact keys were referenced by enabled rules
+   * but are missing from the extracted facts. Useful for the agentic UI to
+   * prompt the reviewer for manual data entry.
+   */
+  function coverageReport(facts, packs, buildingType) {
+    var byKey = {};
+    packs.forEach(function (pack) {
+      if (!pack || !Array.isArray(pack.rules)) return;
+      pack.rules.forEach(function (rule) {
+        if (rule.disabled) return;
+        if (!rule.applies_to || !rule.applies_to.some(function (t) { return t === buildingType || t === 'Other'; })) return;
+        (rule.evidence_keys || []).forEach(function (k) {
+          if (!byKey[k]) byKey[k] = { key: k, missing: false, used_by: [] };
+          byKey[k].used_by.push({ pack_id: pack.id, rule_id: rule.id });
+          if (facts[k] === undefined || facts[k] === null || facts[k] === '') {
+            byKey[k].missing = true;
+          }
+        });
+      });
+    });
+    return Object.keys(byKey).map(function (k) { return byKey[k]; });
+  }
+
+  return {
+    evaluate: evaluate,
+    score: score,
+    resolveParameters: resolveParameters,
+    evaluateAppliesWhen: evaluateAppliesWhen,
+    renderTemplate: renderTemplate,
+    coverageReport: coverageReport,
+    // Exposed for unit/manual testing
+    _checks: checks
+  };
 
 }());
 

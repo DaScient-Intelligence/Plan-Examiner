@@ -1,29 +1,235 @@
 {
-  "version": "2.0.0",
+  "version": "3.0.0",
+  "schema_version": "3.0.0",
+  "categories": [
+    { "id": "building",            "label": "Building & General",         "order": 1 },
+    { "id": "residential",         "label": "Residential",                "order": 2 },
+    { "id": "existing-buildings",  "label": "Existing Buildings",         "order": 3 },
+    { "id": "accessibility",       "label": "Accessibility",              "order": 4 },
+    { "id": "fire",                "label": "Fire Protection",            "order": 5 },
+    { "id": "life-safety",         "label": "Life Safety",                "order": 6 },
+    { "id": "energy",              "label": "Energy",                     "order": 7 },
+    { "id": "mechanical",          "label": "Mechanical",                 "order": 8 },
+    { "id": "plumbing",            "label": "Plumbing",                   "order": 9 },
+    { "id": "occupational-safety", "label": "Occupational Safety (OSHA)", "order": 10 },
+    { "id": "fair-housing",        "label": "Fair Housing",               "order": 11 },
+    { "id": "local",               "label": "Local Amendments",           "order": 12 }
+  ],
   "packs": [
     {
-      "id": "ibc-2021",
-      "name": "IBC 2021",
-      "file": "ibc-2021.json",
+      "id": "ibc-2021", "name": "IBC 2021", "file": "ibc-2021.json",
       "description": "International Building Code 2021 – primary commercial and residential code for most US jurisdictions",
-      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "category": "building",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IBC2021P2",
+      "applies_to_codes": ["2024 IBC", "2021 IBC", "Local", "Other"],
       "priority": 1
     },
     {
-      "id": "ada-2010",
-      "name": "ADA 2010",
-      "file": "ada-2010.json",
-      "description": "ADA Standards for Accessible Design 2010 – federally mandated accessibility requirements",
+      "id": "ibc-2024", "name": "IBC 2024", "file": "ibc-2024.json",
+      "description": "International Building Code 2024 (V2.0) – inherits and overrides IBC 2021",
+      "category": "building",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IBC2024V2.0",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 1,
+      "auto_select": false
+    },
+    {
+      "id": "irc-2021", "name": "IRC 2021", "file": "irc-2021.json",
+      "description": "International Residential Code 2021 – one- and two-family dwellings and townhouses",
+      "category": "residential",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IRC2021P2",
       "applies_to_codes": ["2024 IBC", "Local", "Other"],
       "priority": 2
     },
     {
-      "id": "nfpa-101",
-      "name": "NFPA 101",
-      "file": "nfpa-101.json",
-      "description": "NFPA 101 Life Safety Code 2021 – egress, fire protection, and life safety",
+      "id": "ifc-2021", "name": "IFC 2021", "file": "ifc-2021.json",
+      "description": "International Fire Code 2021 – fire-prevention operations, hazmat, fire access",
+      "category": "fire",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IFC2021P2",
       "applies_to_codes": ["2024 IBC", "Local", "Other"],
       "priority": 3
+    },
+    {
+      "id": "iebc-2021", "name": "IEBC 2021", "file": "iebc-2021.json",
+      "description": "International Existing Building Code 2021 – additions, alterations, change of occupancy",
+      "category": "existing-buildings",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IEBC2021P2",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 4,
+      "auto_select": false
+    },
+    {
+      "id": "iecc-2021", "name": "IECC 2021", "file": "iecc-2021.json",
+      "description": "International Energy Conservation Code 2021 – envelope, lighting, and mechanical efficiency",
+      "category": "energy",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IECC2021P2",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 5
+    },
+    {
+      "id": "imc-2021", "name": "IMC 2021", "file": "imc-2021.json",
+      "description": "International Mechanical Code 2021 – ventilation, exhaust, mechanical systems",
+      "category": "mechanical",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IMC2021P2",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 6
+    },
+    {
+      "id": "ipc-2021", "name": "IPC 2021", "file": "ipc-2021.json",
+      "description": "International Plumbing Code 2021 – plumbing fixtures, water supply, drainage",
+      "category": "plumbing",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/IPC2021P2",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 7
+    },
+    {
+      "id": "a117-1-2017", "name": "ICC A117.1-2017", "file": "a117-1-2017.json",
+      "description": "ICC A117.1-2017 Accessible & Usable Buildings – referenced standard for IBC Chapter 11",
+      "category": "accessibility",
+      "license": "reference-only",
+      "source_url": "https://codes.iccsafe.org/content/A117P12017",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 8
+    },
+    {
+      "id": "ada-2010", "name": "ADA 2010", "file": "ada-2010.json",
+      "description": "ADA Standards for Accessible Design 2010 – federally mandated accessibility requirements",
+      "category": "accessibility",
+      "license": "public-domain",
+      "source_url": "https://www.ada.gov/law-and-regs/design-standards/2010-stds/",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 2
+    },
+    {
+      "id": "aba-2015", "name": "ABA Standards", "file": "aba-2015.json",
+      "description": "Architectural Barriers Act Standards – federal facilities accessibility",
+      "category": "accessibility",
+      "license": "public-domain",
+      "source_url": "https://www.access-board.gov/aba/",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 9,
+      "auto_select": false
+    },
+    {
+      "id": "fhag", "name": "FHA Design Manual", "file": "fhag.json",
+      "description": "Fair Housing Act Design Manual – seven design requirements for covered multifamily housing",
+      "category": "fair-housing",
+      "license": "public-domain",
+      "source_url": "https://www.huduser.gov/portal/publications/PDF/fairhousing/fairfull.pdf",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 10
+    },
+    {
+      "id": "osha-1910-subpart-d", "name": "OSHA 1910 Subpart D", "file": "osha-1910-subpart-d.json",
+      "description": "OSHA 29 CFR 1910 Subpart D – walking-working surfaces, ladders, fall protection",
+      "category": "occupational-safety",
+      "license": "public-domain",
+      "source_url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910SubpartD",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 11
+    },
+    {
+      "id": "osha-1910-subpart-e", "name": "OSHA 1910 Subpart E", "file": "osha-1910-subpart-e.json",
+      "description": "OSHA 29 CFR 1910 Subpart E – means of egress and emergency action plans",
+      "category": "occupational-safety",
+      "license": "public-domain",
+      "source_url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910SubpartE",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 12
+    },
+    {
+      "id": "nfpa-101", "name": "NFPA 101 (2021)", "file": "nfpa-101.json",
+      "description": "NFPA 101 Life Safety Code 2021 – egress, fire protection, and life safety",
+      "category": "life-safety",
+      "license": "reference-only",
+      "source_url": "https://link.nfpa.org/free-access/publications/101/2021",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 3
+    },
+    {
+      "id": "nfpa-101-2024", "name": "NFPA 101 (2024)", "file": "nfpa-101-2024.json",
+      "description": "NFPA 101 Life Safety Code 2024 – inherits NFPA 101 2021",
+      "category": "life-safety",
+      "license": "reference-only",
+      "source_url": "https://link.nfpa.org/free-access/publications/101/2024",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 3,
+      "auto_select": false
+    },
+    {
+      "id": "nfpa-13-2022", "name": "NFPA 13", "file": "nfpa-13-2022.json",
+      "description": "NFPA 13 Standard for the Installation of Sprinkler Systems",
+      "category": "fire",
+      "license": "reference-only",
+      "source_url": "https://link.nfpa.org/free-access/publications/13/2022",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 13
+    },
+    {
+      "id": "nfpa-72-2022", "name": "NFPA 72", "file": "nfpa-72-2022.json",
+      "description": "NFPA 72 National Fire Alarm and Signaling Code",
+      "category": "fire",
+      "license": "reference-only",
+      "source_url": "https://link.nfpa.org/free-access/publications/72/2022",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 14
+    },
+    {
+      "id": "nfpa-80-2022", "name": "NFPA 80", "file": "nfpa-80-2022.json",
+      "description": "NFPA 80 Standard for Fire Doors and Other Opening Protectives",
+      "category": "fire",
+      "license": "reference-only",
+      "source_url": "https://link.nfpa.org/free-access/publications/80/2022",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 15
+    },
+    {
+      "id": "nfpa-1-2024", "name": "NFPA 1", "file": "nfpa-1-2024.json",
+      "description": "NFPA 1 Fire Code 2024",
+      "category": "fire",
+      "license": "reference-only",
+      "source_url": "https://link.nfpa.org/free-access/publications/1/2024",
+      "applies_to_codes": ["2024 IBC", "Local", "Other"],
+      "priority": 16,
+      "auto_select": false
+    },
+    {
+      "id": "cbc-title24-2022", "name": "California Building Code 2022", "file": "cbc-title24-2022.json",
+      "description": "California Title 24 Part 2 – overlays IBC 2021 with California amendments",
+      "category": "local",
+      "license": "state-law",
+      "source_url": "https://www.dgs.ca.gov/BSC/Codes",
+      "applies_to_codes": ["Local"],
+      "priority": 17,
+      "auto_select": false
+    },
+    {
+      "id": "nyc-bc-2022", "name": "NYC Building Code 2022", "file": "nyc-bc-2022.json",
+      "description": "New York City Building Code 2022 – overlays IBC 2021 with NYC amendments",
+      "category": "local",
+      "license": "state-law",
+      "source_url": "https://www.nyc.gov/site/buildings/codes/2022-construction-codes.page",
+      "applies_to_codes": ["Local"],
+      "priority": 18,
+      "auto_select": false
+    },
+    {
+      "id": "chicago-bc-2022", "name": "Chicago Construction Codes 2022", "file": "chicago-bc-2022.json",
+      "description": "City of Chicago Construction Codes 2022 – overlays IBC 2021 with Chicago amendments",
+      "category": "local",
+      "license": "state-law",
+      "source_url": "https://www.chicago.gov/city/en/depts/bldgs/provdrs/inspect/svcs/chicago_constructioncodes.html",
+      "applies_to_codes": ["Local"],
+      "priority": 19,
+      "auto_select": false
     }
   ]
 }

@@ -1,0 +1,32 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "nfpa-101-2024",
+  "name": "NFPA 101 Life Safety Code 2024",
+  "version": "2024",
+  "category": "life-safety",
+  "tags": ["egress", "fire", "life-safety"],
+  "extends": "nfpa-101",
+  "supersedes": ["nfpa-101"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
+  "applies_to": ["Commercial", "Institutional", "Residential"],
+  "source_authority": "National Fire Protection Association (NFPA)",
+  "source_url": "https://link.nfpa.org/free-access/publications/101/2024",
+  "license": "reference-only",
+  "copyright_notice": "NFPA 101® 2024 © 2023 NFPA. Section numbers and numeric requirements only — no normative text reproduced.",
+  "rules": [
+    {
+      "id": "NFPA-2024-43",
+      "code_section": "NFPA 101 2024 Chapter 43",
+      "category": "existing-buildings",
+      "severity": "medium",
+      "label": "Building Rehabilitation – Updated Provisions",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["rehabilitation"],
+      "notes_template": "Apply Chapter 43 rehabilitation work category (Repair, Renovation, Modification, Reconstruction, Change of Use/Occupancy, Addition) to existing buildings.",
+      "citation": "NFPA 101 2024 §43 – Rehabilitation work categories and corresponding requirements.",
+      "remediation": "Classify the rehab project per §43.2 and apply the corresponding subsection."
+    }
+  ]
+}

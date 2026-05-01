@@ -1,0 +1,45 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "nfpa-1-2024",
+  "name": "NFPA 1 Fire Code 2024",
+  "version": "2024",
+  "category": "fire",
+  "tags": ["fire", "operations"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies" },
+  "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+  "source_authority": "National Fire Protection Association (NFPA)",
+  "source_url": "https://link.nfpa.org/free-access/publications/1/2024",
+  "license": "reference-only",
+  "copyright_notice": "NFPA 1 Fire Code 2024 © 2023 NFPA.",
+  "rules": [
+    {
+      "id": "NFPA1-13",
+      "code_section": "NFPA 1 2024 §13",
+      "category": "fire",
+      "severity": "high",
+      "label": "Means of Egress – General",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["egress"],
+      "aliases": ["NFPA-7.5.1", "IFC-1004"],
+      "notes_template": "NFPA 1 references NFPA 101 for means of egress; coordinate occupant load posting, exit access, and emergency lighting requirements.",
+      "citation": "NFPA 1 2024 §13 – Adopts NFPA 101 means-of-egress requirements with state/AHJ amendments.",
+      "remediation": "Coordinate egress drawings with NFPA 1 and NFPA 101 requirements."
+    },
+    {
+      "id": "NFPA1-50",
+      "code_section": "NFPA 1 2024 §50",
+      "category": "fire",
+      "severity": "high",
+      "label": "Hazardous Materials – Control Areas & MAQ",
+      "applies_to": ["Industrial", "Commercial"],
+      "check_fn": "manual",
+      "tags": ["hazmat"],
+      "aliases": ["IFC-50"],
+      "notes_template": "Verify hazmat control areas and maximum allowable quantities per §60; classification of HazMat triggers Group H IBC scoping.",
+      "citation": "NFPA 1 2024 §60 – Hazardous materials thresholds and control-area protections.",
+      "remediation": "Inventory hazmats and apply control-area limits."
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "ipc-2021",
+  "name": "International Plumbing Code 2021",
+  "version": "2021",
+  "category": "plumbing",
+  "tags": ["plumbing", "fixtures", "water"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
+  "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+  "source_authority": "International Code Council (ICC)",
+  "source_url": "https://codes.iccsafe.org/content/IPC2021P2",
+  "license": "reference-only",
+  "copyright_notice": "International Plumbing Code® 2021 © 2021 International Code Council, Inc.",
+  "rules": [
+    {
+      "id": "IPC-403",
+      "code_section": "IPC 2021 §403 / Table 403.1",
+      "category": "plumbing",
+      "severity": "medium",
+      "label": "Minimum Plumbing Fixtures",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "aliases": ["IBC-2902.1", "IBC-2902.1-table"],
+      "tags": ["plumbing", "fixtures"],
+      "evidence_keys": ["occupantLoad", "occupancyGroup"],
+      "notes_template": "Verify fixture counts per IPC Table 403.1 (parallel to IBC Table 2902.1) by occupancy classification: water closets, lavatories, drinking fountains, service sinks.",
+      "citation": "IPC 2021 §403 / Table 403.1 – Minimum number of plumbing fixtures by occupancy classification.",
+      "remediation": "Build a fixture-count schedule per Table 403.1; provide drinking fountains (high+low) and service sinks per §410/§411."
+    },
+    {
+      "id": "IPC-410",
+      "code_section": "IPC 2021 §410",
+      "category": "plumbing",
+      "severity": "medium",
+      "label": "Drinking Fountains – Number & Type",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "aliases": ["ADA-602"],
+      "tags": ["plumbing"],
+      "notes_template": "Verify drinking fountains required by Table 403.1 are provided as bi-level (wheelchair + standing-height) on each floor; bottle filler may substitute per AHJ amendment.",
+      "citation": "IPC 2021 §410 / §410.3 – Drinking fountains shall comply with ADA §602; bi-level (hi-lo) units satisfy both wheelchair and standing-height users.",
+      "remediation": "Show hi-lo drinking fountains on each floor on accessible routes; verify locations against the fixture-count schedule."
+    },
+    {
+      "id": "IPC-606",
+      "code_section": "IPC 2021 §606 / §607",
+      "category": "plumbing",
+      "severity": "medium",
+      "label": "Water Heater & Service Sizing",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["plumbing", "water-supply"],
+      "notes_template": "Verify the water service is sized per §603 with minimum 3/4-in. service to dwellings; water heater set to ≤ 120°F max where serving public lavatories/showers (§607).",
+      "citation": "IPC 2021 §606/§607 – Water-service sizing and water-heater temperature controls.",
+      "remediation": "Document water-service sizing calculations and tempering valves where required."
+    }
+  ]
+}

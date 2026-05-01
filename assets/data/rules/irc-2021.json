@@ -1,0 +1,126 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "irc-2021",
+  "name": "International Residential Code 2021",
+  "version": "2021",
+  "category": "residential",
+  "tags": ["residential", "one-family", "two-family"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
+  "applies_to": ["Residential"],
+  "source_authority": "International Code Council (ICC)",
+  "source_url": "https://codes.iccsafe.org/content/IRC2021P2",
+  "license": "reference-only",
+  "copyright_notice": "International Residential Code® 2021 © 2021 International Code Council, Inc.",
+  "effective_date": "2021-01-01",
+  "placeholders": {
+    "climate_zone": {
+      "type": "enum",
+      "default": "4A",
+      "options": ["1A", "2A", "2B", "3A", "3B", "3C", "4A", "4B", "4C", "5A", "5B", "5C", "6A", "6B", "7", "8"],
+      "label": "IECC Climate Zone",
+      "description": "Climate zone driving insulation, glazing, and air-sealing requirements.",
+      "group": "Energy"
+    }
+  },
+  "rules": [
+    {
+      "id": "IRC-R311.7",
+      "code_section": "IRC 2021 §R311.7",
+      "category": "stairs",
+      "severity": "high",
+      "label": "Residential Stairways",
+      "applies_to": ["Residential"],
+      "check_fn": "stair_geometry",
+      "tags": ["stairs"],
+      "evidence_keys": ["stairTreadDepthIn", "stairRiserHeightIn"],
+      "parameters": {
+        "min_tread_depth_in": 10,
+        "max_riser_height_in": 7.75,
+        "min_riser_height_in": 4,
+        "max_riser_variance_in": 0.375
+      },
+      "citation": "IRC 2021 §R311.7.5 – Risers ≤ 7-3/4 in.; treads ≥ 10 in.; minimum stairway width 36 in.; uniformity within 3/8 in.",
+      "remediation": "Detail residential stairs: ≤ 7-3/4 in. risers, ≥ 10 in. treads, ≥ 36 in. wide, ≤ 3/8 in. variance."
+    },
+    {
+      "id": "IRC-R310",
+      "code_section": "IRC 2021 §R310",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Emergency Escape & Rescue Openings (EERO)",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["egress"],
+      "evidence_keys": ["hasEERO"],
+      "notes_template": "Verify EERO in each sleeping room and basement: net clear opening ≥ 5.7 sq ft (5.0 sq ft at grade floor), height ≥ 24 in., width ≥ 20 in., sill ≤ 44 in. AFF.",
+      "citation": "IRC 2021 §R310 – Each sleeping room and habitable basement shall have at least one operable EERO with net clear opening ≥ 5.7 sq ft (5.0 grade), 24 in. minimum height, 20 in. minimum width, sill ≤ 44 in. AFF.",
+      "remediation": "Provide a compliant EERO in every sleeping room and habitable basement; verify ladder/well per §R310.2 if below grade."
+    },
+    {
+      "id": "IRC-R314",
+      "code_section": "IRC 2021 §R314",
+      "category": "fire",
+      "severity": "critical",
+      "label": "Smoke Alarms",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["fire", "alarms"],
+      "notes_template": "Verify smoke alarms inside each sleeping room, outside each sleeping area within each separate sleeping zone, and on each story including basements (excluding crawl spaces and uninhabitable attics). Hardwired with battery backup; interconnected.",
+      "citation": "IRC 2021 §R314 – Smoke alarms in sleeping rooms, outside sleeping areas, and on each story; hardwired with battery backup; interconnected.",
+      "remediation": "Show hardwired/interconnected smoke alarms at each required location."
+    },
+    {
+      "id": "IRC-R315",
+      "code_section": "IRC 2021 §R315",
+      "category": "fire",
+      "severity": "critical",
+      "label": "Carbon Monoxide Alarms",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["fire", "alarms"],
+      "notes_template": "Verify CO alarms outside each sleeping area in dwellings with fuel-fired appliances or attached garages.",
+      "citation": "IRC 2021 §R315 – CO alarms required outside each separate sleeping area in the immediate vicinity of bedrooms in dwelling units that have fuel-fired appliances or attached garages.",
+      "remediation": "Add CO alarms outside each sleeping area; coordinate with smoke alarms."
+    },
+    {
+      "id": "IRC-R302",
+      "code_section": "IRC 2021 §R302",
+      "category": "fire",
+      "severity": "high",
+      "label": "Two-Family Separation & Garage Separation",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["fire", "separation"],
+      "notes_template": "Verify dwelling-unit separation in two-family: 1-hr rated wall (or 1/2-hr if sprinklered). Garage-to-dwelling: 1/2-in. gypsum on garage side; 5/8-in. Type X on garage ceiling under habitable space.",
+      "citation": "IRC 2021 §R302.3 (two-family) / §R302.6 (garage separation) – Two-family separations require 1-hr (or 1/2-hr sprinklered); garages require 1/2-in. gypsum (5/8-in. Type X under habitable rooms).",
+      "remediation": "Detail dwelling-unit and garage separations per §R302."
+    },
+    {
+      "id": "IRC-R313",
+      "code_section": "IRC 2021 §R313",
+      "category": "fire",
+      "severity": "high",
+      "label": "Automatic Fire Sprinklers (One- and Two-Family)",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["fire", "sprinkler"],
+      "notes_template": "If adopted, verify NFPA 13D residential sprinklers in townhouses and one- and two-family dwellings.",
+      "citation": "IRC 2021 §R313 – Where adopted, requires residential sprinklers per NFPA 13D in townhouses (§R313.1) and one- and two-family dwellings (§R313.2).",
+      "remediation": "Confirm AHJ adoption status of §R313; if adopted, provide NFPA 13D system."
+    },
+    {
+      "id": "IRC-R807",
+      "code_section": "IRC 2021 §R807.1",
+      "category": "structural",
+      "severity": "low",
+      "label": "Attic Access",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["attic"],
+      "notes_template": "Verify attic access opening ≥ 22 × 30 in. with ≥ 30 in. headroom in attics > 30 sq ft and > 30 in. high.",
+      "citation": "IRC 2021 §R807.1 – Attic access required where attic exceeds 30 sq ft and 30 in. vertical clearance; opening ≥ 22 × 30 in.",
+      "remediation": "Provide compliant attic access opening; insulate and weatherstrip."
+    }
+  ]
+}

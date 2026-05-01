@@ -1,0 +1,81 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "osha-1910-subpart-d",
+  "name": "OSHA 29 CFR 1910 Subpart D – Walking-Working Surfaces",
+  "version": "2017",
+  "category": "occupational-safety",
+  "tags": ["osha", "fall-protection", "ladders", "stairs", "public-domain"],
+  "jurisdiction": { "country": "US", "adopting_body": "U.S. Department of Labor / OSHA" },
+  "applies_to": ["Commercial", "Industrial", "Institutional"],
+  "source_authority": "U.S. Occupational Safety and Health Administration (OSHA)",
+  "source_url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910SubpartD",
+  "license": "public-domain",
+  "rules": [
+    {
+      "id": "OSHA-1910.22",
+      "code_section": "29 CFR 1910.22",
+      "category": "occupational-safety",
+      "severity": "high",
+      "label": "General Walking-Working Surfaces",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["surfaces"],
+      "notes_template": "Verify walking-working surfaces are kept in good repair, free of hazards, with adequate drainage; design loads must be sufficient for maximum intended load.",
+      "citation": "29 CFR 1910.22 – Walking-working surfaces shall be kept clean, dry, and free of hazards. Surfaces shall be designed and constructed for maximum intended load.",
+      "remediation": "Document maintenance program and structural design loads."
+    },
+    {
+      "id": "OSHA-1910.23",
+      "code_section": "29 CFR 1910.23",
+      "category": "occupational-safety",
+      "severity": "high",
+      "label": "Fixed Ladders",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["ladders"],
+      "notes_template": "Verify fixed ladders > 24 ft above lower level: ladder safety system or personal fall arrest system required (cages no longer satisfy on new installations after Nov 2018; full conversion required by Nov 2036).",
+      "citation": "29 CFR 1910.23(d) – Fixed ladders extending more than 24 ft above a lower level shall be equipped with a personal fall arrest system or ladder safety system.",
+      "remediation": "Specify ladder safety system (rigid rail or cable) or PFAS on fixed ladders > 24 ft."
+    },
+    {
+      "id": "OSHA-1910.25",
+      "code_section": "29 CFR 1910.25",
+      "category": "occupational-safety",
+      "severity": "high",
+      "label": "Stairways – General Industry",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["stairs"],
+      "notes_template": "Verify general-industry stairs: width ≥ 22 in., riser height ≤ 9.5 in., tread depth ≥ 9.5 in., uniform riser/tread, slope between 30° and 50°, handrails required.",
+      "citation": "29 CFR 1910.25 – Stairway design parameters for general industry occupancies.",
+      "remediation": "Detail stairs per §1910.25; provide handrails on stair widths and configurations as required."
+    },
+    {
+      "id": "OSHA-1910.28",
+      "code_section": "29 CFR 1910.28",
+      "category": "occupational-safety",
+      "severity": "critical",
+      "label": "Fall Protection – 4-Foot Trigger",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["fall-protection"],
+      "notes_template": "Verify fall protection at unprotected sides/edges ≥ 4 ft above lower level (general industry): guardrail (42 in. ± 3), safety net, or PFAS. Roof work has specific provisions in §1910.28(b)(13).",
+      "citation": "29 CFR 1910.28 – Employees on walking-working surfaces 4 ft or more above lower levels shall be protected by guardrail, safety net, or PFAS.",
+      "remediation": "Provide compliant guardrail at every edge ≥ 4 ft, or specify PFAS anchorages and rescue plan."
+    },
+    {
+      "id": "OSHA-1910.29",
+      "code_section": "29 CFR 1910.29",
+      "category": "occupational-safety",
+      "severity": "high",
+      "label": "Guardrails / Handrails / Stair Rails",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["fall-protection", "handrails"],
+      "notes_template": "Verify guardrail top-rail 42 in. ± 3 above walking surface, mid-rail at midpoint, withstand 200 lbf top-rail / 150 lbf mid-rail, with 4-in. toe board where required.",
+      "citation": "29 CFR 1910.29 – Design specifications for guardrails, handrails, and stair rails.",
+      "remediation": "Detail guardrails to §1910.29 strength and dimensional specs; coordinate with toe boards."
+    }
+  ]
+}

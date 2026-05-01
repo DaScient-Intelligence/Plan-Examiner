@@ -1,9 +1,27 @@
 {
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
   "id": "nfpa-101",
   "name": "NFPA 101 Life Safety Code 2021",
   "version": "2021",
-  "jurisdiction": "US",
+  "category": "life-safety",
+  "tags": ["egress", "fire", "life-safety"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
   "applies_to": ["Commercial", "Institutional", "Residential"],
+  "source_authority": "National Fire Protection Association (NFPA)",
+  "source_url": "https://link.nfpa.org/free-access/publications/101/2021",
+  "license": "reference-only",
+  "copyright_notice": "NFPA 101® Life Safety Code® 2021 © 2020 National Fire Protection Association. Section numbers and numeric requirements are referenced as facts; no normative text is reproduced without paraphrase.",
+  "effective_date": "2021-01-01",
+  "placeholders": {
+    "sprinklered": {
+      "type": "boolean",
+      "default": false,
+      "label": "Sprinklered (NFPA 13)",
+      "description": "Sprinkler protection significantly extends NFPA 101 travel-distance, dead-end, and common-path limits.",
+      "group": "Life Safety"
+    }
+  },
   "rules": [
     {
       "id": "NFPA-7.3.1",
@@ -149,6 +167,111 @@
       },
       "citation": "NFPA 101 2021 §9.6.1 – Fire alarm systems shall be installed in occupancies where required by the applicable occupancy chapter. Generally required in buildings >300 persons or >12,000 sq ft.",
       "remediation": "Install an NFPA 72-compliant fire alarm and detection system. Include smoke detection, heat detection, manual pull stations at exits, and audible/visual notification devices throughout."
+    },
+    {
+      "id": "NFPA-7.5.1",
+      "code_section": "NFPA 101 §7.5.1",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Number & Arrangement of Means of Egress",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["egress"],
+      "evidence_keys": ["numExits", "occupantLoad"],
+      "notes_template": "Verify two means of egress where required, located remote from one another (≥ 1/2 of overall diagonal in unsprinklered, 1/3 in sprinklered, per §7.5.1.3.2/3) so that loss of one does not block the other.",
+      "citation": "NFPA 101 2021 §7.5.1 – Means of egress shall be arranged so that two are remote from each other; the minimum separation is one-half (or one-third for sprinklered buildings) of the maximum overall diagonal dimension of the building or area served.",
+      "remediation": "Recheck stair/exit placement: separation must equal or exceed the diagonal-rule distance. Add or relocate exits so two remote MOE are provided."
+    },
+    {
+      "id": "NFPA-7.5.4",
+      "code_section": "NFPA 101 §7.5.4",
+      "category": "egress",
+      "severity": "high",
+      "label": "Dead-End Corridors",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["egress"],
+      "evidence_keys": ["maxDeadEndCorridorFt", "hasSprinklers"],
+      "parameters_by": {
+        "default": { "max_dead_end_ft": 20 },
+        "sprinklered.true": { "max_dead_end_ft": 50 }
+      },
+      "notes_template": "Verify dead-end corridor length ≤ {{params.max_dead_end_ft}} ft (most occupancies). Reference NFPA 101 occupancy chapter for any tighter limits.",
+      "citation": "NFPA 101 2021 §7.5.4 / occupancy chapters – Dead-end corridor length limits depend on occupancy and sprinkler protection.",
+      "remediation": "Reconfigure corridors to eliminate dead ends or keep them within the occupancy-specific length limit."
+    },
+    {
+      "id": "NFPA-7.6.3",
+      "code_section": "NFPA 101 §7.6.3",
+      "category": "egress",
+      "severity": "high",
+      "label": "Common Path of Travel",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["egress", "common-path"],
+      "evidence_keys": ["commonPathDistanceFt", "hasSprinklers"],
+      "parameters_by": {
+        "default": { "max_common_path_ft": 75 },
+        "sprinklered.true": { "max_common_path_ft": 100 }
+      },
+      "notes_template": "Verify common path of travel ≤ {{params.max_common_path_ft}} ft (general; consult occupancy chapter for tighter limits).",
+      "citation": "NFPA 101 2021 §7.6.3 / occupancy chapters – Common path of travel limits depend on occupancy and sprinkler protection.",
+      "remediation": "Reconfigure layout so the longest common path is within the limit; add a second exit or sprinkler protection if exceeded."
+    },
+    {
+      "id": "NFPA-7.2.2",
+      "code_section": "NFPA 101 §7.2.2",
+      "category": "stairs",
+      "severity": "high",
+      "label": "Stair Geometry & Headroom",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["stairs"],
+      "notes_template": "Verify new stairs (NFPA 101 Table 7.2.2.2.1.1.A): tread depth 11 in. min, riser 4–7 in., width per occupant load (44 in. min for occupant load > 50), headroom ≥ 6 ft 8 in.",
+      "citation": "NFPA 101 2021 §7.2.2.2 / Table 7.2.2.2.1.1 – New stairs: 11 in. min tread depth; 4–7 in. riser; 44 in. min width above 50 occupants; uniform within ± 3/16 in.",
+      "remediation": "Detail stairs to comply with NFPA 101 Table 7.2.2.2.1.1.A; tighter than IBC on uniformity (3/16 in.)."
+    },
+    {
+      "id": "NFPA-7.2.1",
+      "code_section": "NFPA 101 §7.2.1",
+      "category": "egress",
+      "severity": "high",
+      "label": "Egress Doors – Operation",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["doors", "egress"],
+      "notes_template": "Verify egress doors: side-hinged or pivoted swinging; swing in direction of egress where serving > 50 occupants or H/A occupancies; latch hardware operable with one hand without tight grasping/pinching/twisting; max opening force 5 lbf (interior) / 15 lbf (exterior).",
+      "citation": "NFPA 101 2021 §7.2.1.4 / §7.2.1.7 – Egress doors shall be side-hinged swinging (with limited exceptions), shall swing in direction of egress travel under the §7.2.1.4.2 conditions, and shall be openable from the egress side with not more than one releasing operation.",
+      "remediation": "Use swinging hardware with a single releasing operation; verify swing direction and operating force per §7.2.1."
+    },
+    {
+      "id": "NFPA-12-13",
+      "code_section": "NFPA 101 §§12–13 / §§38–39",
+      "category": "egress",
+      "severity": "high",
+      "label": "Occupancy Chapter Cross-Reference",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["occupancy"],
+      "experimental": true,
+      "notes_template": "Apply the appropriate NFPA 101 occupancy chapter (12 New Assembly, 13 Existing Assembly, 14 Educational, 18 Health Care, 26 Lodging, 28 Hotels, 36 Mercantile, 38 Business, etc.) for occupancy-specific egress, alarm, and protection rules.",
+      "citation": "NFPA 101 2021 Chapters 12–43 – Occupancy chapters supersede the general core chapters with use-specific requirements.",
+      "remediation": "Identify the correct occupancy chapter and apply its egress, fire-protection, and operational requirements."
+    },
+    {
+      "id": "NFPA-19.6",
+      "code_section": "NFPA 101 §19.6",
+      "category": "fire",
+      "severity": "high",
+      "label": "Existing Health Care – Smoke Compartments",
+      "applies_to": ["Institutional"],
+      "applies_when": "facts.occupancyGroup && facts.occupancyGroup.indexOf('I') == 0",
+      "check_fn": "manual",
+      "tags": ["healthcare"],
+      "experimental": true,
+      "notes_template": "For existing health-care occupancies, verify smoke compartments per §19.3.7 (≤ 22,500 sq ft) and refuge area ≥ 30 net sq ft per non-ambulatory patient (§19.2.3.5).",
+      "citation": "NFPA 101 2021 §19.3.7 / §19.2.3.5 – Existing health-care occupancies shall provide smoke compartments and refuge space sized for relocated occupants.",
+      "remediation": "Re-verify each existing-healthcare smoke compartment area and refuge calculations; document on plans."
     }
   ]
 }

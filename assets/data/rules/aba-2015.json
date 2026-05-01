@@ -1,0 +1,70 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "aba-2015",
+  "name": "Architectural Barriers Act Accessibility Standards",
+  "version": "2015",
+  "category": "accessibility",
+  "tags": ["accessibility", "federal-facilities", "public-domain"],
+  "jurisdiction": { "country": "US", "adopting_body": "U.S. Access Board / GSA / DoD / USPS / HUD" },
+  "applies_to": ["Commercial", "Institutional"],
+  "source_authority": "U.S. Access Board",
+  "source_url": "https://www.access-board.gov/aba/",
+  "license": "public-domain",
+  "rules": [
+    {
+      "id": "ABA-203",
+      "code_section": "ABA §203",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "General Exceptions / Scoping",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["scoping"],
+      "notes_template": "Verify ABA scoping for federal facilities: leased, designed, constructed, or altered with federal funds — full ABA Standards apply with limited exceptions in §203.",
+      "citation": "ABA §203 – General exceptions for raised areas, limited-access spaces, machinery spaces, single-occupant structures, residential dwellings (per §233), and others.",
+      "remediation": "Document any §203 exceptions claimed; otherwise apply ABA technical chapters 3–10."
+    },
+    {
+      "id": "ABA-206",
+      "code_section": "ABA §206",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Accessible Routes",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["routes"],
+      "aliases": ["ADA-403"],
+      "notes_template": "Verify accessible routes connect site arrival points, accessible parking, the accessible entrance, all accessible spaces, and elements within those spaces.",
+      "citation": "ABA §206 – Accessible-route scoping requirements.",
+      "remediation": "Plan a continuous accessible route per §206; coordinate with §402 technical."
+    },
+    {
+      "id": "ABA-216",
+      "code_section": "ABA §216 / §703",
+      "category": "accessibility",
+      "severity": "medium",
+      "label": "Signs",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["signage"],
+      "aliases": ["ADA-703"],
+      "notes_template": "Verify tactile signs at permanent room IDs and visual signs sized for viewing distance per §703 (parallel to ADA).",
+      "citation": "ABA §216 / §703 – Sign scoping and technical (mirrors ADA §216/§703).",
+      "remediation": "Specify §703-compliant signage; reuse ADA submittals."
+    },
+    {
+      "id": "ABA-806",
+      "code_section": "ABA §806",
+      "category": "accessibility",
+      "severity": "medium",
+      "label": "Transient Lodging Guest Rooms",
+      "applies_to": ["Commercial"],
+      "check_fn": "manual",
+      "tags": ["lodging"],
+      "notes_template": "Verify the §224 ratio of accessible guest rooms; each accessible guest room shall comply with §806 (mobility features, communication features).",
+      "citation": "ABA §224 / §806 – Transient lodging accessible guest room scoping and technical.",
+      "remediation": "Build a guest-room schedule per §224; detail accessible rooms per §806."
+    }
+  ]
+}

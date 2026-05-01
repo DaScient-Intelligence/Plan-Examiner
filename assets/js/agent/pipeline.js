@@ -29,17 +29,58 @@ PE.Pipeline = (function () {
   ];
 
   var BASE_RULES_PATH = 'assets/data/rules/';
+  var PLACEHOLDERS_KEY = 'pe.rulePlaceholders';
 
   // ── Rule pack loader ─────────────────────────────────────────────────
   var _packCache = {};
 
-  async function loadPack(filename) {
+  async function _fetchPack(filename) {
     if (_packCache[filename]) return _packCache[filename];
     var resp = await fetch(BASE_RULES_PATH + filename);
     if (!resp.ok) throw new Error('Failed to load rule pack: ' + filename);
     var pack = await resp.json();
     _packCache[filename] = pack;
     return pack;
+  }
+
+  /**
+   * Load a pack and resolve any `extends` chain by deep-merging the parent's
+   * rules. Child rules with the same id override parents; child can also set
+   * `disabled: true` to suppress a parent rule.
+   */
+  async function loadPack(filename, indexById) {
+    var pack = await _fetchPack(filename);
+    if (!pack.extends) return pack;
+    indexById = indexById || await _loadIndexById();
+    var parentMeta = indexById[pack.extends];
+    if (!parentMeta) return pack;
+    var parent = await loadPack(parentMeta.file, indexById);
+    return _mergePack(parent, pack);
+  }
+
+  function _mergePack(parent, child) {
+    var rulesById = {};
+    (parent.rules || []).forEach(function (r) { rulesById[r.id] = r; });
+    (child.rules || []).forEach(function (r) {
+      if (r.disabled === true && rulesById[r.id]) {
+        delete rulesById[r.id];
+      } else {
+        rulesById[r.id] = Object.assign({}, rulesById[r.id] || {}, r);
+      }
+    });
+    var merged = Object.assign({}, parent, child);
+    merged.rules = Object.keys(rulesById).map(function (id) { return rulesById[id]; });
+    // Preserve provenance: track which pack each rule's pack_id is from already
+    // happens at evaluate time.
+    return merged;
+  }
+
+  async function _loadIndexById() {
+    var resp = await fetch(BASE_RULES_PATH + 'index.json');
+    var idx = await resp.json();
+    var map = {};
+    (idx.packs || []).forEach(function (p) { map[p.id] = p; });
+    return map;
   }
 
   async function selectPacks(buildingCode, buildingType) {
@@ -55,13 +96,31 @@ PE.Pipeline = (function () {
         { id: 'nfpa-101',  file: 'nfpa-101.json',   applies_to_codes: ['2024 IBC', 'Local', 'Other'] }
       ]};
     }
-    var relevant = index.packs.filter(function (p) {
+    var indexById = {};
+    (index.packs || []).forEach(function (p) { indexById[p.id] = p; });
+    var relevant = (index.packs || []).filter(function (p) {
+      if (p.disabled === true) return false;
+      if (p.auto_select === false) return false;
       return !p.applies_to_codes || p.applies_to_codes.some(function (c) {
         return c === buildingCode || buildingCode === 'Other' || buildingCode === 'Local';
       });
     });
-    var packs = await Promise.all(relevant.map(function (p) { return loadPack(p.file); }));
+    var packs = await Promise.all(relevant.map(function (p) { return loadPack(p.file, indexById); }));
     return packs.filter(Boolean);
+  }
+
+  /**
+   * Read user-set rule placeholders from localStorage. Return {} if unavailable.
+   */
+  function getStoredPlaceholders() {
+    try {
+      var raw = localStorage.getItem(PLACEHOLDERS_KEY);
+      return raw ? (JSON.parse(raw) || {}) : {};
+    } catch (e) { return {}; }
+  }
+
+  function setStoredPlaceholders(obj) {
+    try { localStorage.setItem(PLACEHOLDERS_KEY, JSON.stringify(obj || {})); } catch (e) {}
   }
 
   // ── Deterministic summary (no LLM) ──────────────────────────────────
@@ -166,10 +225,15 @@ PE.Pipeline = (function () {
     // ── Step 5: Evaluate ──────────────────────────────────────────
     emit('evaluate', 'running', 'Running compliance checks across ' + packs.reduce(function (a, p) { return a + (p.rules ? p.rules.length : 0); }, 0) + ' rules…');
     await _tick();
-    var findings = PE.RuleEngine.evaluate(facts, packs, facts.buildingType);
+    var placeholders = getStoredPlaceholders();
+    var findings = PE.RuleEngine.evaluate(facts, packs, facts.buildingType, { placeholders: placeholders });
     var compScore = PE.RuleEngine.score(findings);
     result.findings = findings;
     result.score    = compScore;
+    result.placeholders = placeholders;
+    if (PE.RuleEngine.coverageReport) {
+      try { result.coverage = PE.RuleEngine.coverageReport(facts, packs, facts.buildingType); } catch (e) {}
+    }
     var flagCnt = findings.filter(function (f) { return f.status === 'FLAGGED'; }).length;
     var revCnt  = findings.filter(function (f) { return f.status === 'REVIEW'; }).length;
     emit('evaluate', 'done', findings.length + ' checks completed — ' + flagCnt + ' flagged, ' + revCnt + ' need review. Score: ' + compScore + '/100.');
@@ -225,7 +289,7 @@ PE.Pipeline = (function () {
     return 'B'; // default
   }
 
-  return { run: run, STEPS: STEPS };
+  return { run: run, STEPS: STEPS, loadPack: loadPack, selectPacks: selectPacks, getStoredPlaceholders: getStoredPlaceholders, setStoredPlaceholders: setStoredPlaceholders };
 
 }());
 

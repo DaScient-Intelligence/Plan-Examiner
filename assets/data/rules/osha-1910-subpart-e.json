@@ -1,0 +1,69 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "osha-1910-subpart-e",
+  "name": "OSHA 29 CFR 1910 Subpart E – Means of Egress / Emergency Plans",
+  "version": "2002",
+  "category": "occupational-safety",
+  "tags": ["osha", "egress", "emergency-action-plan", "public-domain"],
+  "jurisdiction": { "country": "US", "adopting_body": "OSHA" },
+  "applies_to": ["Commercial", "Industrial", "Institutional"],
+  "source_authority": "U.S. Occupational Safety and Health Administration (OSHA)",
+  "source_url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1910/1910SubpartE",
+  "license": "public-domain",
+  "rules": [
+    {
+      "id": "OSHA-1910.36",
+      "code_section": "29 CFR 1910.36",
+      "category": "egress",
+      "severity": "critical",
+      "label": "Means of Egress – Design",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "aliases": ["IBC-1006.2.1", "NFPA-7.5.1"],
+      "tags": ["egress"],
+      "notes_template": "Verify exit routes are permanent, separated by fire-resistance-rated construction, with self-closing fire doors; door swing direction, capacity, width, headroom comply.",
+      "citation": "29 CFR 1910.36 – Design and construction requirements for exit routes (permanent, fire-resistance-rated, two routes where reasonably feasible, sufficient capacity, etc.).",
+      "remediation": "Document exit-route design (permanent construction, separation, capacity, headroom, signage)."
+    },
+    {
+      "id": "OSHA-1910.37",
+      "code_section": "29 CFR 1910.37",
+      "category": "egress",
+      "severity": "high",
+      "label": "Means of Egress – Maintenance",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["egress"],
+      "notes_template": "Verify exit routes free of explosive/flammable furnishings, kept unobstructed, adequately lit, marked with 'EXIT' signs visible from any direction.",
+      "citation": "29 CFR 1910.37 – Exit routes shall be unobstructed, properly lit, and marked with EXIT signs.",
+      "remediation": "Add maintenance program and signage to construction documents and operations plan."
+    },
+    {
+      "id": "OSHA-1910.38",
+      "code_section": "29 CFR 1910.38",
+      "category": "occupational-safety",
+      "severity": "high",
+      "label": "Emergency Action Plan",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["operations"],
+      "notes_template": "Verify a written EAP for employers > 10 employees: alarm, evacuation, accounting for personnel, rescue/medical duties, contact info; trained on hire and on changes.",
+      "citation": "29 CFR 1910.38 – Emergency action plan required (written for > 10 employees) with specified minimum content and training.",
+      "remediation": "Develop and document a §1910.38-compliant EAP; train employees."
+    },
+    {
+      "id": "OSHA-1910.39",
+      "code_section": "29 CFR 1910.39",
+      "category": "occupational-safety",
+      "severity": "medium",
+      "label": "Fire Prevention Plan",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["operations"],
+      "notes_template": "Verify written fire-prevention plan (where required) covering fuel sources, ignition controls, housekeeping, fire-prevention equipment maintenance, and employee training.",
+      "citation": "29 CFR 1910.39 – Fire prevention plan required by certain other OSHA standards; written for employers > 10 employees.",
+      "remediation": "Develop a written fire-prevention plan covering hazards on site."
+    }
+  ]
+}

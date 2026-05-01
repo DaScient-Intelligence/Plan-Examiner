@@ -1,0 +1,57 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "imc-2021",
+  "name": "International Mechanical Code 2021",
+  "version": "2021",
+  "category": "mechanical",
+  "tags": ["mechanical", "ventilation", "exhaust"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
+  "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+  "source_authority": "International Code Council (ICC)",
+  "source_url": "https://codes.iccsafe.org/content/IMC2021P2",
+  "license": "reference-only",
+  "copyright_notice": "International Mechanical Code® 2021 © 2021 International Code Council, Inc.",
+  "rules": [
+    {
+      "id": "IMC-403",
+      "code_section": "IMC 2021 §403",
+      "category": "ventilation",
+      "severity": "high",
+      "label": "Mechanical Ventilation Rate",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["ventilation"],
+      "evidence_keys": ["occupantLoad", "grossArea"],
+      "notes_template": "Verify outdoor air per Table 403.3.1.1: e.g., office 5 cfm/person + 0.06 cfm/sf; classroom 10 cfm/person + 0.12 cfm/sf; assembly 5 cfm/person + 0.06 cfm/sf.",
+      "citation": "IMC 2021 §403 / Table 403.3.1.1 – Outdoor airflow rates per person and per area by occupancy category (aligned with ASHRAE 62.1).",
+      "remediation": "Compute required outdoor air using Table 403.3.1.1 with the calculated occupant load and floor area; document on mechanical schedules."
+    },
+    {
+      "id": "IMC-505",
+      "code_section": "IMC 2021 §505",
+      "category": "ventilation",
+      "severity": "medium",
+      "label": "Domestic Range Hood / Kitchen Exhaust",
+      "applies_to": ["Residential", "Commercial"],
+      "check_fn": "manual",
+      "tags": ["ventilation", "kitchens"],
+      "notes_template": "Verify domestic kitchen exhaust ducted to exterior; commercial kitchen hoods per §507 with Type I/II classification.",
+      "citation": "IMC 2021 §505 (domestic) / §507 (commercial hoods) – Range hood and kitchen exhaust requirements.",
+      "remediation": "Coordinate kitchen exhaust drawings with §505/§507; provide make-up air where required."
+    },
+    {
+      "id": "IMC-606",
+      "code_section": "IMC 2021 §606",
+      "category": "fire",
+      "severity": "high",
+      "label": "Smoke Detectors in Air-Distribution Systems",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["fire", "ventilation"],
+      "notes_template": "Verify duct smoke detectors in supply systems > 2,000 cfm and return systems > 15,000 cfm, controlling shutdown of HVAC unit and signaling FACP.",
+      "citation": "IMC 2021 §606 – Smoke detectors in supply > 2,000 cfm and return > 15,000 cfm air-distribution systems.",
+      "remediation": "Specify duct-mounted smoke detectors interconnected to the FACP and unit shutdown controls."
+    }
+  ]
+}

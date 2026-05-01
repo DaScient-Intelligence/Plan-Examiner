@@ -1,0 +1,44 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "nfpa-80-2022",
+  "name": "NFPA 80 Standard for Fire Doors and Other Opening Protectives",
+  "version": "2022",
+  "category": "fire",
+  "tags": ["fire", "doors", "opening-protectives"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (referenced from IBC §716)" },
+  "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+  "source_authority": "National Fire Protection Association (NFPA)",
+  "source_url": "https://link.nfpa.org/free-access/publications/80/2022",
+  "license": "reference-only",
+  "copyright_notice": "NFPA 80 2022 © 2021 NFPA.",
+  "rules": [
+    {
+      "id": "NFPA80-4",
+      "code_section": "NFPA 80 2022 §4",
+      "category": "fire",
+      "severity": "high",
+      "label": "Fire Door Inspection & Testing",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "aliases": ["IBC-716"],
+      "tags": ["doors"],
+      "notes_template": "Verify annual inspection and testing of fire doors with 11-point checklist per §5.2.4.2 and recordkeeping per §5.2.4.4.",
+      "citation": "NFPA 80 2022 §5.2 – Fire door assemblies shall be inspected and tested annually with documented results.",
+      "remediation": "Establish an annual fire-door inspection program; add this to the operations & maintenance manual."
+    },
+    {
+      "id": "NFPA80-6",
+      "code_section": "NFPA 80 2022 §6",
+      "category": "fire",
+      "severity": "high",
+      "label": "Hardware – Self/Automatic-Closing & Latching",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["doors"],
+      "notes_template": "Verify fire door hardware: self- or automatic-closing, positive latching at all ratings; coordinator on pairs without astragal; max gaps 1/8 in. (top/sides), 3/4 in. bottom (lower per listing).",
+      "citation": "NFPA 80 2022 §6 – Hardware requirements for fire-door assemblies including closing, latching, gaps, and labeling.",
+      "remediation": "Specify §6-compliant labeled fire door, frame, and hardware sets; check field-installed gaps."
+    }
+  ]
+}

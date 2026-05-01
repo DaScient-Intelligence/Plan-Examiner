@@ -1,0 +1,57 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "nfpa-13-2022",
+  "name": "NFPA 13 Standard for the Installation of Sprinkler Systems",
+  "version": "2022",
+  "category": "fire",
+  "tags": ["fire", "sprinkler"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (referenced from IBC §903 and IFC)" },
+  "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+  "source_authority": "National Fire Protection Association (NFPA)",
+  "source_url": "https://link.nfpa.org/free-access/publications/13/2022",
+  "license": "reference-only",
+  "copyright_notice": "NFPA 13 2022 © 2021 NFPA.",
+  "rules": [
+    {
+      "id": "NFPA13-OH1",
+      "code_section": "NFPA 13 2022 §19.2.3",
+      "category": "fire",
+      "severity": "high",
+      "label": "Hazard Classification – Density/Area Method",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["sprinkler"],
+      "notes_template": "Verify hazard classification and density/area design: Light Hazard 0.10 gpm/sf over 1500 sf; Ordinary Hazard 1 0.15/1500; OH 2 0.20/1500; Extra Hazard varies. Adjust per Figure 19.2.3.1.1.",
+      "citation": "NFPA 13 2022 §19.2.3 / Figure 19.2.3.1.1 – Density/area curves for Light, Ordinary, and Extra hazard classifications.",
+      "remediation": "Document hazard classification and design density/area on hydraulic calculations; coordinate with §19.3 hose-stream allowance."
+    },
+    {
+      "id": "NFPA13-9",
+      "code_section": "NFPA 13 2022 §9 / §10",
+      "category": "fire",
+      "severity": "high",
+      "label": "Sprinkler Spacing – Standard Coverage",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["sprinkler"],
+      "notes_template": "Verify standard-coverage spray sprinkler spacing: ≤ 130 sf/sprinkler (Light), ≤ 130 sf (OH), with max 15 ft spacing (LH/OH) and minimum 6 ft between sprinklers.",
+      "citation": "NFPA 13 2022 §10 – Standard-coverage spray sprinkler spacing limits and obstruction rules.",
+      "remediation": "Verify sprinkler layout against §10 area/spacing tables and beam/obstruction rules."
+    },
+    {
+      "id": "NFPA13D",
+      "code_section": "NFPA 13D",
+      "category": "fire",
+      "severity": "high",
+      "label": "One- and Two-Family Sprinklers",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["sprinkler", "residential"],
+      "aliases": ["IRC-R313"],
+      "notes_template": "If residential sprinklers are required (IRC §R313 adoption), design per NFPA 13D: minimum 10-minute water supply (single-story / area < 2000 sf), 7-minute pump test.",
+      "citation": "NFPA 13D 2022 – Residential sprinkler systems for one- and two-family dwellings and townhouses.",
+      "remediation": "Design per NFPA 13D and coordinate with water-service sizing."
+    }
+  ]
+}

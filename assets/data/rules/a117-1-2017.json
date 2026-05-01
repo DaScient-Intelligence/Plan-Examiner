@@ -1,0 +1,72 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "a117-1-2017",
+  "name": "ICC A117.1-2017 Accessible & Usable Buildings and Facilities",
+  "version": "2017",
+  "category": "accessibility",
+  "tags": ["accessibility", "technical-companion"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (referenced from IBC Chapter 11)" },
+  "applies_to": ["Commercial", "Institutional", "Residential"],
+  "source_authority": "International Code Council (ICC) / ANSI A117 Committee",
+  "source_url": "https://codes.iccsafe.org/content/A117P12017",
+  "license": "reference-only",
+  "copyright_notice": "ICC A117.1-2017 © 2017 International Code Council, Inc.",
+  "rules": [
+    {
+      "id": "A117.1-403",
+      "code_section": "A117.1-2017 §403",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Walking Surfaces – Width & Slope",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "aliases": ["ADA-403"],
+      "tags": ["walking-surfaces"],
+      "notes_template": "Verify accessible walking surfaces ≥ 36 in. clear width (32 in. allowed for ≤ 24 in.); cross slope ≤ 1:48; running slope ≤ 1:20.",
+      "citation": "ICC A117.1-2017 §403 – Accessible walking surfaces width and slope (parallel to ADA §403).",
+      "remediation": "Provide accessible walking surfaces meeting §403."
+    },
+    {
+      "id": "A117.1-404",
+      "code_section": "A117.1-2017 §404",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Doors and Doorways",
+      "applies_to": ["Commercial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "aliases": ["ADA-404.2.3", "ADA-404.2.4"],
+      "tags": ["doors"],
+      "notes_template": "Verify doors per §404: 32-in. clear width, maneuvering clearances per Table 404.2.3, hardware 34–48 in. AFF, force ≤ 5 lbf.",
+      "citation": "ICC A117.1-2017 §404 – Doors and doorways: clear width, maneuvering clearances, hardware, opening force.",
+      "remediation": "Detail every accessible door per §404 including maneuvering clearance diagrams."
+    },
+    {
+      "id": "A117.1-1004",
+      "code_section": "A117.1-2017 §1004",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Type A Dwelling/Sleeping Units",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["residential", "type-a"],
+      "notes_template": "Type A units (≥ 4 units in non-elevator buildings, certain percentages elsewhere): full accessible kitchen, bath, doors, hardware, controls; reinforced for grab bars.",
+      "citation": "ICC A117.1-2017 §1004 – Type A dwelling/sleeping units (more accessible than Type B), required by IBC Chapter 11 in certain residential building types.",
+      "remediation": "Identify required Type A units and detail all interior elements per §1004."
+    },
+    {
+      "id": "A117.1-1005",
+      "code_section": "A117.1-2017 §1005",
+      "category": "accessibility",
+      "severity": "medium",
+      "label": "Type B Dwelling/Sleeping Units (FHA-equivalent)",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "aliases": ["FHA-2", "FHA-3", "FHA-4", "FHA-5", "FHA-6", "FHA-7"],
+      "tags": ["residential", "type-b"],
+      "notes_template": "Type B units approximate Fair Housing Act seven design requirements: accessible building entrance, accessible/usable common spaces, usable doors, accessible route, accessible environmental controls, reinforced bathroom walls, usable kitchens/baths.",
+      "citation": "ICC A117.1-2017 §1005 – Type B dwelling/sleeping units, used to satisfy FHA design requirements via IBC Chapter 11.",
+      "remediation": "Detail every Type B unit per §1005; this also satisfies the FHA's seven design requirements when adopted by reference."
+    }
+  ]
+}

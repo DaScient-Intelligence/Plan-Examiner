@@ -1,0 +1,58 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "cbc-title24-2022",
+  "name": "California Building Code (Title 24, Part 2) 2022",
+  "version": "2022",
+  "category": "local",
+  "tags": ["california", "title-24", "amendments"],
+  "extends": "ibc-2021",
+  "jurisdiction": { "country": "US", "state": "CA", "adopting_body": "California Building Standards Commission" },
+  "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+  "source_authority": "California Building Standards Commission",
+  "source_url": "https://www.dgs.ca.gov/BSC/Codes",
+  "license": "state-law",
+  "rules": [
+    {
+      "id": "CBC-11B",
+      "code_section": "CBC 2022 Chapter 11B",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "California Accessibility (Public Buildings)",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "aliases": ["ADA-403"],
+      "tags": ["accessibility"],
+      "notes_template": "California 11B is generally stricter than ADA 2010: e.g., curb ramp slope ≤ 1:12 with 1:48 cross slope, detectable warnings on all curb ramps, larger accessible-parking ratios, additional EV-charging accessibility.",
+      "citation": "CBC 2022 Chapter 11B – California-specific accessibility standards for publicly funded and publicly accessible buildings.",
+      "remediation": "Apply Chapter 11B (not just ADA) wherever stricter; coordinate with DSA where state-funded."
+    },
+    {
+      "id": "CBC-1505.1",
+      "code_section": "CBC 2022 §1505",
+      "category": "fire",
+      "severity": "high",
+      "label": "Class A Roof Coverings (Wildland-Urban Interface)",
+      "applies_to": ["Residential", "Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["wildfire", "roofing"],
+      "notes_template": "California amendment: Class A roof covering required statewide on new construction; additional Chapter 7A WUI provisions in mapped zones (eaves, vents, exterior walls, decks).",
+      "citation": "CBC 2022 §1505.1.3 / §701A – California requires Class A roof coverings; Chapter 7A applies in WUI zones.",
+      "remediation": "Specify Class A roof; in WUI, add ignition-resistant exterior assemblies per Chapter 7A."
+    },
+    {
+      "id": "CBC-1613",
+      "code_section": "CBC 2022 §1613",
+      "category": "structural",
+      "severity": "high",
+      "label": "California Seismic Amendments",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "aliases": ["IBC-1613"],
+      "tags": ["structural", "seismic"],
+      "notes_template": "California-specific seismic provisions modify ASCE 7 application; site-specific ground motion analyses required for soft/liquefiable sites; OSHPD and DSA have separate amendments.",
+      "citation": "CBC 2022 §1613 / Title 24 amendments – California seismic-design amendments to ASCE 7.",
+      "remediation": "Use a California-licensed structural engineer; coordinate with DSA/OSHPD as applicable."
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "nfpa-72-2022",
+  "name": "NFPA 72 National Fire Alarm and Signaling Code",
+  "version": "2022",
+  "category": "fire",
+  "tags": ["fire", "alarm", "signaling"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (referenced from IBC §907)" },
+  "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+  "source_authority": "National Fire Protection Association (NFPA)",
+  "source_url": "https://link.nfpa.org/free-access/publications/72/2022",
+  "license": "reference-only",
+  "copyright_notice": "NFPA 72 2022 © 2021 NFPA.",
+  "rules": [
+    {
+      "id": "NFPA72-17",
+      "code_section": "NFPA 72 2022 §17",
+      "category": "fire",
+      "severity": "high",
+      "label": "Initiating Devices – Smoke Detection Spacing",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["fire", "detection"],
+      "notes_template": "Verify spot-type smoke detector spacing ≤ 30 ft on flat smooth ceilings (≤ 900 sf coverage at 0.9 spacing factor); reduce for beams, joists, sloped ceilings.",
+      "citation": "NFPA 72 2022 §17.7 – Smoke detector spacing limits and modifications for ceiling configurations.",
+      "remediation": "Document detector layout per §17 with spacing reductions for beams/joists/sloped ceilings."
+    },
+    {
+      "id": "NFPA72-18",
+      "code_section": "NFPA 72 2022 §18",
+      "category": "fire",
+      "severity": "high",
+      "label": "Notification Appliances – Visible (Strobe) Coverage",
+      "applies_to": ["Commercial", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["fire", "notification"],
+      "notes_template": "Verify strobe candela ratings per Table 18.5.5.4.1(a)/(b) by room dimension and mounting height; sleeping rooms require 177 cd minimum at pillow level.",
+      "citation": "NFPA 72 2022 §18.5 – Visible notification appliance candela ratings and locations.",
+      "remediation": "Build a strobe schedule from Table 18.5.5.4.1; verify each space's largest dimension drives candela selection."
+    },
+    {
+      "id": "NFPA72-29",
+      "code_section": "NFPA 72 2022 §29",
+      "category": "fire",
+      "severity": "high",
+      "label": "Single- and Multi-Station Alarms (Residential)",
+      "applies_to": ["Residential"],
+      "check_fn": "manual",
+      "tags": ["fire", "residential"],
+      "aliases": ["IRC-R314"],
+      "notes_template": "Verify single- and multiple-station smoke alarms in dwelling units per §29.5: each sleeping room, outside each separate sleeping area, on each story; interconnected; primary AC + battery backup.",
+      "citation": "NFPA 72 2022 §29 – Single- and multiple-station alarms and household fire alarm systems.",
+      "remediation": "Show §29.5-compliant smoke alarms and CO alarms, interconnected with battery backup."
+    }
+  ]
+}

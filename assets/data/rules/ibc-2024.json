@@ -1,0 +1,85 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "ibc-2024",
+  "name": "International Building Code 2024",
+  "version": "2024",
+  "category": "building",
+  "tags": ["egress", "fire", "stairs", "plumbing", "ventilation"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
+  "applies_to": ["Commercial", "Residential", "Industrial", "Institutional", "Infrastructure", "Other"],
+  "extends": "ibc-2021",
+  "supersedes": ["ibc-2021"],
+  "source_authority": "International Code Council (ICC)",
+  "source_url": "https://codes.iccsafe.org/content/IBC2024V2.0",
+  "license": "reference-only",
+  "copyright_notice": "International Building Code® 2024 © 2024 International Code Council, Inc. Section numbers and numeric requirements are referenced as facts; no normative text is reproduced without paraphrase.",
+  "effective_date": "2024-01-01",
+  "rules": [
+    {
+      "id": "IBC-2024-1010.1.1",
+      "code_section": "IBC 2024 §1010.1.1",
+      "category": "egress",
+      "severity": "high",
+      "label": "Door Clear Width (2024 Update)",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "door_width",
+      "tags": ["egress", "doors"],
+      "aliases": ["IBC-1010.1"],
+      "evidence_keys": ["doorWidthInches", "occupantLoad"],
+      "parameters": {
+        "min_clear_width_in": 32,
+        "min_accessible_width_in": 32,
+        "occupant_load_threshold": 50
+      },
+      "citation": "IBC 2024 §1010.1.1 – Egress doors shall provide a clear opening width of not less than 32 in. when set at 90°. The 36-in. minimum width applies for high-occupancy egress doors.",
+      "remediation": "Provide minimum 32-in. clear width on egress doors (36 in. for high-occupancy egress); confirm clear width is measured at 90° from door face to stop."
+    },
+    {
+      "id": "IBC-2024-1004.5",
+      "code_section": "IBC 2024 §1004.5 / Table 1004.5",
+      "category": "egress",
+      "severity": "high",
+      "label": "Occupant Load – 2024 Factors",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "occupant_load",
+      "tags": ["egress"],
+      "aliases": ["IBC-1004.1"],
+      "evidence_keys": ["grossArea", "occupancyGroup"],
+      "parameters": {
+        "load_factors": {
+          "assembly_fixed": 1,
+          "assembly_unconcentrated": 15,
+          "assembly_concentrated": 7,
+          "business": 150,
+          "educational_classroom": 20,
+          "educational_other": 50,
+          "industrial_general": 100,
+          "industrial_special": 200,
+          "residential": 200,
+          "storage": 300,
+          "mercantile_ground": 60,
+          "mercantile_other": 60,
+          "hotel_guestroom": 200
+        }
+      },
+      "citation": "IBC 2024 §1004.5 / Table 1004.5 – Occupant load factors by space use; use net or gross floor area as specified for each row.",
+      "remediation": "Use 2024 Table 1004.5 load factors (renumbered from 2021 Table 1004.1.2)."
+    },
+    {
+      "id": "IBC-2024-903.2",
+      "code_section": "IBC 2024 §903.2",
+      "category": "fire",
+      "severity": "critical",
+      "label": "Sprinklers – 2024 Scoping by Occupancy",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "aliases": ["IBC-903.2"],
+      "tags": ["fire", "sprinkler"],
+      "evidence_keys": ["occupancyGroup", "grossArea", "stories", "buildingHeightFt", "hasSprinklers"],
+      "notes_template": "Verify NFPA 13 sprinkler requirements per occupancy in IBC 2024 §903.2 (Group A by area/load; Group B always for high-rise; all R; all I; H per category; etc.).",
+      "citation": "IBC 2024 §903.2.1–§903.2.11 – Automatic sprinkler systems are required by occupancy group with thresholds for area, occupant load, story, and height.",
+      "remediation": "Identify the project's occupancy group(s) and apply §903.2's specific subsections; design per NFPA 13."
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "iebc-2021",
+  "name": "International Existing Building Code 2021",
+  "version": "2021",
+  "category": "existing-buildings",
+  "tags": ["existing-buildings", "alterations", "additions", "change-of-occupancy"],
+  "jurisdiction": { "country": "US", "adopting_body": "varies (model code)" },
+  "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+  "source_authority": "International Code Council (ICC)",
+  "source_url": "https://codes.iccsafe.org/content/IEBC2021P2",
+  "license": "reference-only",
+  "copyright_notice": "International Existing Building Code® 2021 © 2021 International Code Council, Inc.",
+  "placeholders": {
+    "compliance_method": {
+      "type": "enum",
+      "default": "Work-Area",
+      "options": ["Prescriptive", "Work-Area", "Performance"],
+      "label": "IEBC Compliance Method",
+      "description": "IEBC offers three compliance paths (Chapters 4, 5–13, or 14). Choose one per project.",
+      "group": "Existing Buildings"
+    }
+  },
+  "rules": [
+    {
+      "id": "IEBC-302",
+      "code_section": "IEBC 2021 §302",
+      "category": "existing-buildings",
+      "severity": "medium",
+      "label": "Investigation & Evaluation",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "check_fn": "manual",
+      "tags": ["existing"],
+      "notes_template": "Verify a §302 investigation/evaluation report has been prepared documenting existing conditions, structural capacity, and code-required upgrades.",
+      "citation": "IEBC 2021 §302 – An evaluation of the existing building is required to determine the scope of work and applicable code requirements.",
+      "remediation": "Prepare an existing-conditions evaluation including structural, fire-protection, and accessibility findings."
+    },
+    {
+      "id": "IEBC-305",
+      "code_section": "IEBC 2021 §305",
+      "category": "accessibility",
+      "severity": "high",
+      "label": "Accessibility – Existing Buildings",
+      "applies_to": ["Commercial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["accessibility", "alterations"],
+      "notes_template": "Verify alterations comply with §305: at least 20% of altered area construction cost spent on accessible path of travel to the primary function area, restrooms, and drinking fountains (until accessible).",
+      "citation": "IEBC 2021 §305.7 – Alterations to a primary function area trigger an accessible path of travel obligation up to 20% of the construction cost.",
+      "remediation": "Plan path-of-travel upgrades: entrance, route, restrooms, drinking fountains, public phones, until accessible or 20% of cost is reached."
+    },
+    {
+      "id": "IEBC-CH4",
+      "code_section": "IEBC 2021 Chapter 4",
+      "category": "existing-buildings",
+      "severity": "medium",
+      "label": "Prescriptive Compliance Method",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "applies_when": "placeholders.compliance_method == 'Prescriptive'",
+      "check_fn": "manual",
+      "tags": ["alterations", "additions"],
+      "notes_template": "Apply Chapter 4 prescriptive scoping for additions, alterations, and change of occupancy; structural §403, accessibility §410, etc.",
+      "citation": "IEBC 2021 Chapter 4 – Prescriptive method for repairs, additions, alterations, and change of occupancy.",
+      "remediation": "Document each work category with the Chapter 4 requirements applied."
+    },
+    {
+      "id": "IEBC-CH5-13",
+      "code_section": "IEBC 2021 Chapters 5–13",
+      "category": "existing-buildings",
+      "severity": "medium",
+      "label": "Work-Area Compliance Method",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "applies_when": "placeholders.compliance_method == 'Work-Area'",
+      "check_fn": "manual",
+      "tags": ["alterations", "work-area"],
+      "notes_template": "Classify the work as Repair, Level 1/2/3 Alteration, Change of Occupancy, Addition, or Historic; apply the corresponding chapter (5–13).",
+      "citation": "IEBC 2021 Chapters 5–13 – Work-area method classifies work and applies a tailored set of requirements.",
+      "remediation": "Identify level of alteration and apply Chapters 7–10 requirements; combine with Chapter 11 (Change of Occupancy) and Chapter 12 (Additions) where applicable."
+    },
+    {
+      "id": "IEBC-CH14",
+      "code_section": "IEBC 2021 Chapter 14",
+      "category": "existing-buildings",
+      "severity": "medium",
+      "label": "Performance Compliance Method",
+      "applies_to": ["Commercial", "Industrial", "Institutional", "Residential"],
+      "applies_when": "placeholders.compliance_method == 'Performance'",
+      "check_fn": "manual",
+      "tags": ["alterations", "performance"],
+      "notes_template": "Apply Chapter 14 scoring system covering fire safety, means of egress, and general safety; aggregate scores must equal/exceed minimums in Table 1401.6.",
+      "citation": "IEBC 2021 Chapter 14 – Performance method scores fire safety, means of egress, and general safety against acceptance criteria.",
+      "remediation": "Complete the Chapter 14 evaluation worksheet and demonstrate aggregate scores meet acceptance thresholds."
+    }
+  ]
+}

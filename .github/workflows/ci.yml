@@ -33,12 +33,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
       - name: Validate rule pack JSON
         run: |
-          for f in assets/data/rules/*.json; do
+          for f in assets/data/rules/*.json assets/data/rules/schema/*.json; do
             echo "Validating $f..."
             python3 -c "import json,sys; json.load(open('$f')); print('  OK')" || exit 1
           done
+      - name: Validate rule packs (schema + envelope + check_fn refs)
+        run: node scripts/validate-rules.mjs
 
   check-links:
     name: Link Check

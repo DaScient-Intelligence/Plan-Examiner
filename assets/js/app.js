@@ -446,12 +446,14 @@ PE.App = (function () {
     return '<div class="finding-row" data-status="' + f.status + '" style="border-radius:12px;padding:12px 14px;margin-bottom:8px;border:1px solid;' + wrapStyle + '">' +
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">' +
       '<div style="flex:1;">' +
-      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap;">' +
       '<span style="font-size:.8rem;font-weight:600;color:#e2e8f0;">' + _esc(f.label) + '</span>' +
       '<span style="font-size:.65rem;color:#64748b;">' + _esc(f.code_section || '') + '</span>' +
+      (f.pack_name ? '<span title="' + _esc(f.license || '') + '" style="font-size:.55rem;color:#94a3b8;background:rgba(148,163,184,.12);padding:1px 6px;border-radius:3px;">' + _esc(f.pack_name) + '</span>' : '') +
+      (f.experimental ? '<span title="Experimental — not yet fully validated" style="font-size:.55rem;color:#fbbf24;background:rgba(251,191,36,.1);padding:1px 6px;border-radius:3px;">EXP</span>' : '') +
       '</div>' +
       '<p style="font-size:.75rem;color:#94a3b8;margin:0 0 4px 0;">' + _esc(f.note) + '</p>' +
-      (f.status !== 'PASS' ? '<details style="margin-top:4px;"><summary style="font-size:.7rem;color:#64748b;cursor:pointer;">Remediation ›</summary><p style="font-size:.72rem;color:#7dd3fc;margin:4px 0 0 0;padding-left:8px;">' + _esc(f.remediation) + '</p></details>' : '') +
+      (f.status !== 'PASS' ? '<details style="margin-top:4px;"><summary style="font-size:.7rem;color:#64748b;cursor:pointer;">Remediation ›</summary><p style="font-size:.72rem;color:#7dd3fc;margin:4px 0 0 0;padding-left:8px;">' + _esc(f.remediation) + '</p>' + (f.source_url ? '<p style="font-size:.7rem;margin:4px 0 0 8px;"><a href="' + _esc(f.source_url) + '" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc;">Open source ›</a></p>' : '') + '</details>' : '') +
       '</div>' +
       '<span style="font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:5px;letter-spacing:.07em;white-space:nowrap;flex-shrink:0;' + (statusStyle[f.status] || '') + '">' + f.status + '</span>' +
       '</div></div>';

@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dascient.github.io/Plan-Examiner/assets/data/rules/schema/rule-pack.schema.json",
+  "title": "Plan-Examiner Rule Pack",
+  "description": "Schema v3.0.0 for Plan-Examiner rule packs. Back-compatible with v1/v2: all v3-only fields are optional.",
+  "type": "object",
+  "required": ["id", "name", "version", "rules"],
+  "properties": {
+    "$schema":        { "type": "string" },
+    "schema_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "id":             { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "name":           { "type": "string", "minLength": 1 },
+    "version":        { "type": "string" },
+    "description":    { "type": "string" },
+    "category":       { "type": "string", "enum": ["building", "accessibility", "fire", "life-safety", "energy", "mechanical", "plumbing", "structural", "residential", "existing-buildings", "occupational-safety", "fair-housing", "local"] },
+    "tags":           { "type": "array", "items": { "type": "string" } },
+    "applies_to":     { "type": "array", "items": { "type": "string" } },
+    "jurisdiction": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "properties": {
+            "country":        { "type": "string" },
+            "state":          { "type": "string" },
+            "locality":       { "type": "string" },
+            "adopting_body":  { "type": "string" }
+          }
+        }
+      ]
+    },
+    "source_authority":  { "type": "string", "description": "Issuing body (e.g., ICC, U.S. DOJ, NFPA, Access Board)." },
+    "source_url":        { "type": "string", "format": "uri" },
+    "license":           { "type": "string", "enum": ["public-domain", "reference-only", "cc-by", "cc-by-sa", "state-law", "other"] },
+    "copyright_notice":  { "type": "string", "description": "Required for reference-only / cc-by / cc-by-sa licensed packs." },
+    "effective_date":    { "type": "string", "format": "date" },
+    "supersedes":        { "type": "array", "items": { "type": "string" } },
+    "extends":           { "type": "string", "description": "ID of a parent pack to inherit and override rules from." },
+    "amendments":        { "type": "array", "items": { "type": "string" }, "description": "IDs of overlay packs that amend this one." },
+    "placeholders": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type":        { "type": "string", "enum": ["string", "number", "boolean", "enum"] },
+          "default":     {},
+          "description": { "type": "string" },
+          "options":     { "type": "array", "items": { "type": "string" } },
+          "label":       { "type": "string" },
+          "group":       { "type": "string" }
+        }
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "license": { "enum": ["reference-only", "cc-by", "cc-by-sa"] } }, "required": ["license"] },
+      "then": { "required": ["copyright_notice", "source_authority"] }
+    }
+  ],
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "code_section", "label", "applies_to"],
+      "properties": {
+        "id":            { "type": "string" },
+        "code_section":  { "type": "string" },
+        "category":      { "type": "string" },
+        "severity":      { "type": "string", "enum": ["critical", "high", "medium", "low", "info"] },
+        "label":         { "type": "string" },
+        "applies_to":    { "type": "array", "items": { "type": "string" } },
+        "check_fn":      { "type": "string" },
+        "parameters":    { "type": "object" },
+        "parameters_by": {
+          "type": "object",
+          "description": "Variant table keyed by selector (e.g., 'default', 'occupancy.A', 'sprinklered.true'). Most-specific selector wins.",
+          "additionalProperties": { "type": "object" }
+        },
+        "tables": {
+          "type": "object",
+          "description": "Named lookup tables. Each table is an array of row objects with bracketed thresholds.",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        },
+        "applies_when": {
+          "type": "string",
+          "description": "Whitelisted boolean expression evaluated against facts and pack placeholders. E.g., 'facts.stories >= 4 && placeholders.sprinklered == true'."
+        },
+        "aliases":       { "type": "array", "items": { "type": "string" }, "description": "Equivalent rule IDs in other packs (cross-walk)." },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source"],
+            "properties": {
+              "source":  { "type": "string" },
+              "section": { "type": "string" },
+              "url":     { "type": "string", "format": "uri" }
+            }
+          }
+        },
+        "figures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url"],
+            "properties": {
+              "url":     { "type": "string", "format": "uri" },
+              "alt":     { "type": "string" },
+              "license": { "type": "string" }
+            }
+          }
+        },
+        "evidence_keys":   { "type": "array", "items": { "type": "string" }, "description": "Fact keys this rule consumes; used by the coverage report." },
+        "confidence_hint": { "type": "string", "enum": ["high", "medium", "low"] },
+        "tags":            { "type": "array", "items": { "type": "string" } },
+        "disabled":        { "type": "boolean" },
+        "experimental":    { "type": "boolean" },
+        "notes_template":  { "type": "string", "description": "Mustache-style template for human-readable notes; supports {{value}}, {{required}}, {{...}} placeholders resolved by the engine." },
+        "citation":        { "type": "string" },
+        "remediation":     { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "nyc-bc-2022",
+  "name": "New York City Building Code 2022",
+  "version": "2022",
+  "category": "local",
+  "tags": ["new-york-city", "amendments"],
+  "extends": "ibc-2021",
+  "jurisdiction": { "country": "US", "state": "NY", "locality": "New York City", "adopting_body": "NYC Department of Buildings" },
+  "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+  "source_authority": "NYC Department of Buildings",
+  "source_url": "https://www.nyc.gov/site/buildings/codes/2022-construction-codes.page",
+  "license": "state-law",
+  "rules": [
+    {
+      "id": "NYC-BC-403",
+      "code_section": "NYC BC 2022 §403",
+      "category": "fire",
+      "severity": "critical",
+      "label": "High-Rise – NYC Amendments",
+      "applies_to": ["Commercial", "Residential", "Institutional"],
+      "applies_when": "facts.buildingHeightFt > 75 || placeholders.high_rise == true",
+      "check_fn": "manual",
+      "aliases": ["IBC-403"],
+      "tags": ["high-rise"],
+      "notes_template": "NYC adds: photoluminescent egress markings (LL26/04), two-way radio coverage, reinforced egress stair/exit vestibules, stricter standpipe pressures.",
+      "citation": "NYC BC 2022 §403 / Local Law 26/04 – High-rise office and certain other occupancies require photoluminescent exit-path markings and other NYC-specific provisions.",
+      "remediation": "Add photoluminescent markings, NYC-specific standpipe sizing, and confirm two-way radio/repeater design."
+    },
+    {
+      "id": "NYC-BC-3309",
+      "code_section": "NYC BC 2022 §3309",
+      "category": "fire",
+      "severity": "high",
+      "label": "Construction Site Safety (Site Safety Plans)",
+      "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+      "check_fn": "manual",
+      "tags": ["construction-safety"],
+      "notes_template": "NYC requires Site Safety Plans, sidewalk sheds, supported scaffold permits, crane permits per §3309 and supplemental NYC rules.",
+      "citation": "NYC BC 2022 §3309 – Construction site safety, including site safety plan requirements (10+ stories or 125+ ft).",
+      "remediation": "Engage a Site Safety Manager; submit a Site Safety Plan; coordinate with TR1/TR8."
+    }
+  ]
+}

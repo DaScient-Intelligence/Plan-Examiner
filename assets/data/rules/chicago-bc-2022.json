@@ -1,0 +1,32 @@
+{
+  "$schema": "./schema/rule-pack.schema.json",
+  "schema_version": "3.0.0",
+  "id": "chicago-bc-2022",
+  "name": "Chicago Construction Codes 2022",
+  "version": "2022",
+  "category": "local",
+  "tags": ["chicago", "amendments"],
+  "extends": "ibc-2021",
+  "jurisdiction": { "country": "US", "state": "IL", "locality": "Chicago", "adopting_body": "Chicago Department of Buildings" },
+  "applies_to": ["Commercial", "Residential", "Industrial", "Institutional"],
+  "source_authority": "City of Chicago Department of Buildings",
+  "source_url": "https://www.chicago.gov/city/en/depts/bldgs/provdrs/inspect/svcs/chicago_constructioncodes.html",
+  "license": "state-law",
+  "rules": [
+    {
+      "id": "CHI-BC-13",
+      "code_section": "Chicago Title 14B §13",
+      "category": "fire",
+      "severity": "high",
+      "label": "Chicago Egress / Stair Pressurization for High-Rise",
+      "applies_to": ["Commercial", "Residential", "Institutional"],
+      "applies_when": "facts.buildingHeightFt > 80 || placeholders.high_rise == true",
+      "check_fn": "manual",
+      "aliases": ["IBC-403"],
+      "tags": ["high-rise"],
+      "notes_template": "Chicago amends IBC §909 / §403 with stair-pressurization, smoke-control, and elevator-recall provisions specific to local life-safety ordinances.",
+      "citation": "Chicago Construction Codes 2022 (based on IBC 2021) – Local high-rise life-safety amendments.",
+      "remediation": "Apply Chicago-specific high-rise provisions; coordinate with CDOB life-safety reviewer."
+    }
+  ]
+}
