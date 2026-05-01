@@ -31,6 +31,7 @@ PE.App = (function () {
     _initSubscribeForm();
     _initPricingCalc();
     _initModal();
+    _initPartnerGate();
     _initAISettings();
     _initChat();
     _initKeyboardShortcuts();
@@ -48,6 +49,32 @@ PE.App = (function () {
     var keyDisp  = document.getElementById('displayEncKey');
     if (keyInput) keyInput.value = key;
     if (keyDisp)  keyDisp.textContent = key;
+  }
+
+  // ── Partner / free-trial gating ──────────────────────────────────────
+  // Visitors get one free comprehensive analysis. After that, continued
+  // use is reserved for subscribed partners (see plan-examiner@dascient.com).
+  var FREE_ANALYSIS_LIMIT  = 1;
+  var ANALYSIS_COUNT_KEY   = 'pe.analysisCount';
+  var PARTNER_KEY_FLAG     = 'pe.partnerKey';
+
+  function _getAnalysisCount() {
+    try { return parseInt(localStorage.getItem(ANALYSIS_COUNT_KEY), 10) || 0; }
+    catch (e) { return 0; }
+  }
+  function _incAnalysisCount() {
+    try { localStorage.setItem(ANALYSIS_COUNT_KEY, String(_getAnalysisCount() + 1)); }
+    catch (e) { /* storage unavailable */ }
+  }
+  function _isPartner() {
+    try { return !!localStorage.getItem(PARTNER_KEY_FLAG); }
+    catch (e) { return false; }
+  }
+  function _setPartner(key) {
+    try { localStorage.setItem(PARTNER_KEY_FLAG, key); } catch (e) {}
+  }
+  function _hasReachedFreeLimit() {
+    return !_isPartner() && _getAnalysisCount() >= FREE_ANALYSIS_LIMIT;
   }
 
   // ── Navigation ────────────────────────────────────────────────────────
@@ -179,6 +206,13 @@ PE.App = (function () {
         showErr('Please select a plan file (.pdf, .docx, .dxf, or .dwg).'); return;
       }
 
+      // Partner-access gate: visitors get one free comprehensive analysis;
+      // continued use is exclusive to subscribed partners.
+      if (_hasReachedFreeLimit()) {
+        openPartnerGate();
+        return;
+      }
+
       var file     = fileInput.files[0];
       var formData = { buildingType: buildingType, buildingCode: buildingCode, city: city.trim(), state: state.trim(), country: country.trim() };
 
@@ -209,6 +243,9 @@ PE.App = (function () {
         _buildAnalysis(result);
         // Save to history
         if (PE.History) PE.History.save({ projectInfo: result.projectInfo, score: result.score, findingsSummary: { flagged: result.findings.filter(function (f) { return f.status === 'FLAGGED'; }).length, review: result.findings.filter(function (f) { return f.status === 'REVIEW'; }).length, passed: result.findings.filter(function (f) { return f.status === 'PASS'; }).length } }).catch(function () {});
+
+        // Count this completed comprehensive analysis toward the free-trial limit.
+        _incAnalysisCount();
 
         // After pipeline finishes, switch to analysis
         setTimeout(function () { switchTab('analysis'); }, 600);
@@ -699,7 +736,7 @@ PE.App = (function () {
       if (e.key === 'u' || e.key === 'U') { document.getElementById('upload') && document.getElementById('upload').scrollIntoView({ behavior: 'smooth' }); }
       if (e.key === 'r' || e.key === 'R') { if (_currentResult) { openModal(); switchTab('analysis'); } }
       if (e.key === 'e' || e.key === 'E') { exportReport(); }
-      if (e.key === 'Escape') { closeModal(); closeAIModal(); closeCommandPalette(); }
+      if (e.key === 'Escape') { closeModal(); closeAIModal(); closeCommandPalette(); closePartnerGate(); }
     });
   }
 
@@ -729,6 +766,8 @@ PE.App = (function () {
       { label: 'Submission Guidelines',icon: 'fa-book-open',      action: function () { document.getElementById('guidelines').scrollIntoView({ behavior:'smooth' }); } },
       { label: 'Pricing',              icon: 'fa-calculator',     action: function () { document.getElementById('pricing').scrollIntoView({ behavior:'smooth' }); } },
       { label: 'Subscribe',            icon: 'fa-paper-plane',    action: function () { document.getElementById('subscribe').scrollIntoView({ behavior:'smooth' }); } },
+      { label: 'Become a Partner',     icon: 'fa-handshake',      action: openPartnerGate },
+      { label: 'Donate (Cash.App)',    icon: 'fa-heart',          action: function () { window.open('https://Cash.App/$dascient/', '_blank', 'noopener,noreferrer'); } },
       { label: 'Contact',              icon: 'fa-envelope',       action: function () { document.getElementById('contact').scrollIntoView({ behavior:'smooth' }); } }
     ];
 
@@ -773,6 +812,68 @@ PE.App = (function () {
     _paletteOpen = false;
   }
 
+  // ── Partner gate modal ────────────────────────────────────────────────
+  function _initPartnerGate() {
+    var overlay = document.getElementById('partnerGateOverlay');
+    if (overlay) {
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) closePartnerGate(); });
+    }
+    var keyInput = document.getElementById('partnerGateKey');
+    if (keyInput) {
+      keyInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); activatePartnerKey(); }
+      });
+    }
+    // Subscribe section: partner-key reveal toggle
+    var toggle = document.getElementById('partnerKeyToggle');
+    var row    = document.getElementById('partnerKeyRow');
+    var input  = document.getElementById('partnerKeyInput');
+    if (toggle && row) {
+      toggle.addEventListener('click', function (e) {
+        e.preventDefault();
+        row.classList.toggle('hidden');
+        if (!row.classList.contains('hidden') && input) input.focus();
+      });
+    }
+    if (input) {
+      input.addEventListener('change', function () {
+        var v = (input.value || '').trim();
+        if (v) { _setPartner(v); _updateLLMBadge(); }
+      });
+    }
+  }
+
+  function openPartnerGate() {
+    var overlay = document.getElementById('partnerGateOverlay');
+    if (!overlay) return;
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    var status = document.getElementById('partnerGateStatus');
+    if (status) status.textContent = '';
+    var input = document.getElementById('partnerGateKey');
+    if (input) input.value = '';
+  }
+
+  function closePartnerGate() {
+    var overlay = document.getElementById('partnerGateOverlay');
+    if (!overlay) return;
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function activatePartnerKey() {
+    var input  = document.getElementById('partnerGateKey');
+    var status = document.getElementById('partnerGateStatus');
+    var key    = ((input && input.value) || '').trim();
+    if (!key) {
+      if (status) { status.textContent = 'Enter the partner key provided by Plan-Examiner.'; status.style.color = '#f87171'; }
+      return;
+    }
+    _setPartner(key);
+    if (status) { status.textContent = 'Partner access activated. Thank you!'; status.style.color = '#34d399'; }
+    setTimeout(closePartnerGate, 900);
+  }
+
   // ── Service Worker ────────────────────────────────────────────────────
   function _registerSW() {
     if ('serviceWorker' in navigator) {
@@ -808,7 +909,10 @@ PE.App = (function () {
     copyEncKey:       copyEncKey,
     openCommandPalette: openCommandPalette,
     closeCommandPalette: closeCommandPalette,
-    showShortcutsHelp:  showShortcutsHelp
+    showShortcutsHelp:  showShortcutsHelp,
+    openPartnerGate:    openPartnerGate,
+    closePartnerGate:   closePartnerGate,
+    activatePartnerKey: activatePartnerKey
   };
 
 }());
