@@ -3,7 +3,7 @@
  * Caches static assets for offline use (PWA).
  */
 
-var CACHE_NAME = 'plan-examiner-v2';
+var CACHE_NAME = 'plan-examiner-v3';
 var STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -50,6 +50,24 @@ self.addEventListener('fetch', function (event) {
   if (event.request.method !== 'GET') return;
   var url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
+
+  // The partner allowlist must always reflect the latest published hashes
+  // so that newly-onboarded donors can unlock instantly. Use a
+  // network-first strategy with a cache fallback for offline use.
+  if (url.pathname.endsWith('/assets/data/partners.json')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).then(function (response) {
+        if (response && response.status === 200 && response.type === 'basic') {
+          var clone = response.clone();
+          caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, clone); });
+        }
+        return response;
+      }).catch(function () {
+        return caches.match(event.request);
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(function (cached) {

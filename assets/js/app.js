@@ -93,21 +93,41 @@ PE.App = (function () {
   }
 
   // Fetch the public partner allowlist. Hashed entries only — no
-  // plaintext emails are stored or transmitted.
+  // plaintext emails are stored or transmitted. Only successful fetches
+  // are memoized (with a short TTL) so a donor whose hash hasn't landed
+  // yet — or who is briefly offline — will re-fetch on the next attempt
+  // instead of being stuck with a stale empty list until full reload.
   var _partnersCache = null;
+  var _partnersCacheLoadedAt = 0;
+  var _partnersCachePromise = null;
+  var PARTNERS_CACHE_TTL_MS = 5 * 60 * 1000;
   async function _loadPartners() {
-    if (_partnersCache) return _partnersCache;
-    try {
-      var resp = await fetch('assets/data/partners.json');
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      var json = await resp.json();
-      _partnersCache = (json && Array.isArray(json.hashedEmails))
-        ? json.hashedEmails.map(function (h) { return String(h).toLowerCase(); })
-        : [];
-    } catch (e) {
-      _partnersCache = [];
+    var now = Date.now();
+    if (_partnersCache && (now - _partnersCacheLoadedAt) < PARTNERS_CACHE_TTL_MS) {
+      return _partnersCache;
     }
-    return _partnersCache;
+    if (_partnersCachePromise) return _partnersCachePromise;
+    _partnersCachePromise = (async function () {
+      try {
+        // cache:'no-store' prevents the SW/HTTP caches from serving a
+        // stale allowlist when the owner has just appended a new hash.
+        var resp = await fetch('assets/data/partners.json', { cache: 'no-store' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        var json = await resp.json();
+        var partners = (json && Array.isArray(json.hashedEmails))
+          ? json.hashedEmails.map(function (h) { return String(h).toLowerCase(); })
+          : [];
+        _partnersCache = partners;
+        _partnersCacheLoadedAt = Date.now();
+        return _partnersCache;
+      } catch (e) {
+        // Don't poison the cache on failure — let the next call retry.
+        return [];
+      } finally {
+        _partnersCachePromise = null;
+      }
+    }());
+    return _partnersCachePromise;
   }
 
   // ── Navigation ────────────────────────────────────────────────────────
@@ -877,7 +897,14 @@ PE.App = (function () {
     if (input) {
       input.addEventListener('change', function () {
         var v = (input.value || '').trim();
-        if (v) { _setPartner(v); _updateLLMBadge(); }
+        if (!v) return;
+        // Route through the verified gate flow — never store an unverified
+        // key. We populate the gate's input and reuse activatePartnerKey()
+        // so the value is checked against the hashed allowlist.
+        var gateInput = document.getElementById('partnerGateKey');
+        if (gateInput) gateInput.value = v;
+        openPartnerGate();
+        activatePartnerKey();
       });
     }
   }
@@ -907,14 +934,36 @@ PE.App = (function () {
   function activatePartnerKey() {
     var input  = document.getElementById('partnerGateKey');
     var status = document.getElementById('partnerGateStatus');
-    var key    = ((input && input.value) || '').trim();
+    var key    = ((input && input.value) || '').trim().toLowerCase();
+    function setStatus(msg, color) {
+      if (!status) return;
+      status.textContent = msg;
+      status.style.color = color || '#64748b';
+    }
     if (!key) {
-      if (status) { status.textContent = 'Enter the partner key provided by Plan-Examiner.'; status.style.color = '#f87171'; }
+      setStatus('Enter the partner key provided by Plan-Examiner.', '#f87171');
       return;
     }
-    _setPartner(key);
-    if (status) { status.textContent = 'Partner access activated. Thank you!'; status.style.color = '#34d399'; }
-    setTimeout(closePartnerGate, 900);
+    // A partner key is the SHA-256 hash of the donor's normalized email
+    // (i.e., one of the entries published in assets/data/partners.json).
+    // Reject anything that isn't a 64-char hex string, and verify the
+    // value is actually on the allowlist before unlocking.
+    if (!/^[a-f0-9]{64}$/.test(key)) {
+      setStatus('That doesn\u2019t look like a valid partner key. Use the verified email unlock above, or paste the SHA-256 hash on your allowlist row.', '#f87171');
+      return;
+    }
+    setStatus('Verifying key\u2026', '#64748b');
+    _loadPartners().then(function (list) {
+      if (list.indexOf(key) !== -1) {
+        _setPartner('key:' + key);
+        setStatus('Partner access activated. Thank you!', '#34d399');
+        setTimeout(closePartnerGate, 900);
+      } else {
+        setStatus('We don\u2019t see that key on the allowlist yet. Please use the verified email unlock above, or contact plan-examiner@dascient.com.', '#fbbf24');
+      }
+    }).catch(function () {
+      setStatus('Unable to verify right now. Please try again or contact plan-examiner@dascient.com.', '#f87171');
+    });
   }
 
   // Unlock partner access by checking the donor's email against the
@@ -939,7 +988,7 @@ PE.App = (function () {
       if (!hash) { setStatus('This browser does not support secure hashing. Please contact plan-examiner@dascient.com.', '#f87171'); return; }
       var list = await _loadPartners();
       if (list.indexOf(hash) !== -1) {
-        _setPartner('email:' + hash.slice(0, 12));
+        _setPartner('email:' + hash);
         setStatus('Welcome, partner! Full access unlocked.', '#34d399');
         setTimeout(closePartnerGate, 1200);
       } else {

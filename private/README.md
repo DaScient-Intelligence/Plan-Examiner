@@ -27,11 +27,26 @@ This directory is **git-ignored** by `.gitignore`. Anything you place here
    your local `private/partners.txt` (this file).
 3. You compute the SHA-256 hash of the normalized (trimmed, lowercased)
    email and append it to the public allowlist
-   `assets/data/partners.json`. For example:
+   `assets/data/partners.json`. The browser-side unlock flow normalizes
+   the email the same way (`String(email).trim().toLowerCase()`), so your
+   hash must come from the **normalized** value. For example:
 
    ```sh
-   printf '%s' "alice@example.com" | sha256sum
-   # → 2bd806c97f0e00af1a1fc3328fa763a9269723c8db8fac4f93af71db186d6e90
+   # Normalize (trim + lowercase) then hash, printing only the hex digest:
+   email="  Alice@Example.COM  "
+   printf '%s' "$email" \
+     | tr '[:upper:]' '[:lower:]' \
+     | awk '{$1=$1; printf "%s", $0}' \
+     | sha256sum \
+     | awk '{print $1}'
+   # → ff8d9819fc0e12bf0d24892e45987e249a28dce836a85cad60e28eaaa8c6d976
+   ```
+
+   Or, equivalently, with Python:
+
+   ```sh
+   python3 -c 'import hashlib,sys; print(hashlib.sha256(sys.argv[1].strip().lower().encode()).hexdigest())' "alice@example.com"
+   # → ff8d9819fc0e12bf0d24892e45987e249a28dce836a85cad60e28eaaa8c6d976
    ```
 
    Then commit/push the updated `assets/data/partners.json`. GitHub Pages
