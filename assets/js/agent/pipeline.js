@@ -173,22 +173,63 @@ PE.Pipeline = (function () {
    */
   async function run(file, formData, onStep) {
     var emit = onStep || function () {};
+    var L = (PE && PE.Log) ? PE.Log : null;
+    var pipeT0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    function _now() { return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now(); }
+    function _stepLog(stepId, status, detail, data) {
+      if (L) L.info('pipeline', stepId + ' ' + status + ': ' + (detail || ''), data || null);
+    }
     var result = { facts: {}, packs: [], findings: [], score: 0, summary: '', correctionLetter: '' };
+    if (L) L.info('pipeline', 'Pipeline start', { file: file.name, size: file.size, formData: formData });
 
     // ── Step 1: Ingest ─────────────────────────────────────────────
+    var sT0 = _now();
     emit('ingest', 'running', 'Parsing ' + file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)…');
+    _stepLog('ingest', 'running', 'parsing ' + file.name, { size: file.size });
     var extraction;
     try {
-      extraction = await PE.Extractors.extract(file, formData);
+      // Forward OCR/long-running progress into the UI so the user sees motion
+      // during slow ingest (e.g. Tesseract pages).
+      extraction = await PE.Extractors.extract(file, formData, function (p) {
+        if (p && typeof p.progress === 'number') {
+          emit('ingest', 'running', (p.status ? p.status.charAt(0).toUpperCase() + p.status.slice(1) : 'OCR') + ' ' + p.progress + '%…');
+        }
+      });
+      var sT1 = _now();
+      var ingestMs = Math.round(sT1 - sT0);
       if (extraction.unsupported) {
-        emit('ingest', 'done', 'DWG file received. Native DWG rendering requires full engine — convert to DXF or PDF for automated analysis.');
+        var unsupMsg = extraction.unsupportedReason ||
+          (extraction.source === 'dwg'
+            ? 'DWG file received. Native DWG rendering requires full engine — convert to DXF or PDF for automated analysis.'
+            : 'Unsupported file type.');
+        emit('ingest', extraction.source === 'dwg' ? 'done' : 'error', unsupMsg);
+        _stepLog('ingest', extraction.source === 'dwg' ? 'done' : 'error', unsupMsg, { durationMs: ingestMs, source: extraction.source });
         result.rawExtraction = extraction;
-        result.summary = '**DWG files** cannot be parsed in-browser. Please convert to DXF (ASCII) or PDF for automated compliance analysis.\n\nYour file will be fully processed upon subscription.';
+        if (extraction.source === 'dwg') {
+          result.summary = '**DWG files** cannot be parsed in-browser. Please convert to DXF (ASCII) or PDF for automated compliance analysis.\n\nYour file will be fully processed upon subscription.';
+        } else {
+          result.summary = '**' + unsupMsg + '**\n\nNo automated analysis was performed because the file type is not supported by the in-browser scanner.';
+        }
         return result;
       }
-      emit('ingest', 'done', 'Extracted ' + (extraction.text ? extraction.text.length : 0) + ' chars from ' + extraction.source.toUpperCase() + (extraction.pageCount ? ' (' + extraction.pageCount + ' pages)' : '') + (extraction.layers ? ', ' + extraction.layers.length + ' DXF layers' : ''));
+      var doneDetail = 'Extracted ' + (extraction.text ? extraction.text.length : 0) + ' chars from ' + extraction.source.toUpperCase() +
+        (extraction.pageCount ? ' (' + extraction.pageCount + ' pages)' : '') +
+        (extraction.layers ? ', ' + extraction.layers.length + ' DXF layers' : '');
+      if (extraction.warning) doneDetail += '  ⚠ ' + extraction.warning;
+      emit('ingest', 'done', doneDetail);
+      _stepLog('ingest', 'done', doneDetail, {
+        durationMs: ingestMs,
+        source: extraction.source,
+        chars: extraction.text ? extraction.text.length : 0,
+        pages: extraction.pageCount,
+        layers: extraction.layers ? extraction.layers.length : undefined,
+        warning: extraction.warning || null,
+        sha256: extraction.fileMeta && extraction.fileMeta.sha256
+      });
+      if (extraction.warning && extraction.warningMsg && L) L.warn('pipeline', extraction.warningMsg, { warning: extraction.warning });
     } catch (err) {
       emit('ingest', 'error', 'Ingestion failed: ' + err.message);
+      if (L) L.error('pipeline', 'ingest failed: ' + err.message, { error: err && err.stack });
       throw err;
     }
 
@@ -196,36 +237,56 @@ PE.Pipeline = (function () {
     var facts = extraction.facts || {};
 
     // ── Step 2: Classify ───────────────────────────────────────────
+    sT0 = _now();
     emit('classify', 'running', 'Identifying occupancy and use group…');
+    _stepLog('classify', 'running');
     await _tick();
     var useGroup = facts.occupancyGroup || _inferUseGroup(formData.buildingType, extraction.text);
     facts.occupancyGroup = useGroup;
     facts.buildingType   = formData.buildingType || facts.buildingType || 'Commercial';
-    emit('classify', 'done', 'Classified as ' + facts.buildingType + (useGroup !== facts.buildingType ? ' (IBC Use Group: ' + useGroup + ')' : '') + '.');
+    var classifyDetail = 'Classified as ' + facts.buildingType + (useGroup !== facts.buildingType ? ' (IBC Use Group: ' + useGroup + ')' : '') + '.';
+    emit('classify', 'done', classifyDetail);
+    _stepLog('classify', 'done', classifyDetail, { durationMs: Math.round(_now() - sT0), buildingType: facts.buildingType, useGroup: useGroup });
 
     // ── Step 3: Extract Facts ─────────────────────────────────────
+    sT0 = _now();
     emit('extract', 'running', 'Pulling dimensional data and feature flags…');
+    _stepLog('extract', 'running');
     await _tick();
     var extracted = Object.keys(facts).filter(function (k) { return facts[k] !== null && facts[k] !== undefined && !k.startsWith('_'); });
-    emit('extract', 'done', extracted.length + ' fact(s) extracted: ' + extracted.slice(0, 5).join(', ') + (extracted.length > 5 ? '…' : '.'));
+    var extractDetail = extracted.length + ' fact(s) extracted: ' + extracted.slice(0, 5).join(', ') + (extracted.length > 5 ? '…' : '.');
+    emit('extract', 'done', extractDetail);
+    _stepLog('extract', 'done', extractDetail, { durationMs: Math.round(_now() - sT0), factsCount: extracted.length, factKeys: extracted });
     result.facts = facts;
 
     // ── Step 4: Select Rules ──────────────────────────────────────
+    sT0 = _now();
     emit('select', 'running', 'Loading rule packs for ' + (formData.buildingCode || 'IBC 2021') + '…');
+    _stepLog('select', 'running', 'loading packs', { buildingCode: formData.buildingCode });
     var packs;
     try {
       packs = await selectPacks(formData.buildingCode || '2024 IBC', facts.buildingType);
       result.packs = packs;
-      emit('select', 'done', packs.length + ' rule pack(s) loaded: ' + packs.map(function (p) { return p.name; }).join(', ') + '.');
+      var selectDetail = packs.length + ' rule pack(s) loaded: ' + packs.map(function (p) { return p.name; }).join(', ') + '.';
+      emit('select', 'done', selectDetail);
+      _stepLog('select', 'done', selectDetail, {
+        durationMs: Math.round(_now() - sT0),
+        packs: packs.map(function (p) { return { id: p.id, name: p.name, ruleCount: (p.rules || []).length }; })
+      });
     } catch (err) {
       emit('select', 'error', 'Failed to load rule packs: ' + err.message);
+      if (L) L.error('pipeline', 'select failed: ' + err.message, { error: err && err.stack });
       throw err;
     }
 
     // ── Step 5: Evaluate ──────────────────────────────────────────
-    emit('evaluate', 'running', 'Running compliance checks across ' + packs.reduce(function (a, p) { return a + (p.rules ? p.rules.length : 0); }, 0) + ' rules…');
+    sT0 = _now();
+    var totalRules = packs.reduce(function (a, p) { return a + (p.rules ? p.rules.length : 0); }, 0);
+    emit('evaluate', 'running', 'Running compliance checks across ' + totalRules + ' rules…');
+    _stepLog('evaluate', 'running', 'running ' + totalRules + ' rules', { totalRules: totalRules });
     await _tick();
     var placeholders = getStoredPlaceholders();
+    if (L) L.debug('pipeline', 'placeholders applied', placeholders);
     var findings = PE.RuleEngine.evaluate(facts, packs, facts.buildingType, { placeholders: placeholders });
     var compScore = PE.RuleEngine.score(findings);
     result.findings = findings;
@@ -236,29 +297,51 @@ PE.Pipeline = (function () {
     }
     var flagCnt = findings.filter(function (f) { return f.status === 'FLAGGED'; }).length;
     var revCnt  = findings.filter(function (f) { return f.status === 'REVIEW'; }).length;
-    emit('evaluate', 'done', findings.length + ' checks completed — ' + flagCnt + ' flagged, ' + revCnt + ' need review. Score: ' + compScore + '/100.');
+    var passCnt = findings.filter(function (f) { return f.status === 'PASS'; }).length;
+    var evalDetail = findings.length + ' checks completed — ' + flagCnt + ' flagged, ' + revCnt + ' need review. Score: ' + compScore + '/100.';
+    emit('evaluate', 'done', evalDetail);
+    _stepLog('evaluate', 'done', evalDetail, {
+      durationMs: Math.round(_now() - sT0),
+      findings:  findings.length,
+      passed:    passCnt,
+      review:    revCnt,
+      flagged:   flagCnt,
+      score:     compScore,
+      coverage:  result.coverage ? { keys: result.coverage.length, missing: result.coverage.filter(function (c) { return c.missing; }).length } : null
+    });
 
     // ── Step 6: Cite ──────────────────────────────────────────────
+    sT0 = _now();
     emit('cite', 'running', 'Attaching code citations and remediation notes…');
+    _stepLog('cite', 'running');
     await _tick();
     var citedCount = findings.filter(function (f) { return f.citation; }).length;
-    emit('cite', 'done', citedCount + ' citations attached from ' + packs.map(function (p) { return p.name; }).join(', ') + '.');
+    var citeDetail = citedCount + ' citations attached from ' + packs.map(function (p) { return p.name; }).join(', ') + '.';
+    emit('cite', 'done', citeDetail);
+    _stepLog('cite', 'done', citeDetail, { durationMs: Math.round(_now() - sT0), cited: citedCount });
 
     // ── Step 7: Draft ─────────────────────────────────────────────
+    sT0 = _now();
     emit('draft', 'running', PE.LLM && PE.LLM.isConfigured() ? 'Drafting AI narrative summary…' : 'Generating deterministic summary…');
+    _stepLog('draft', 'running', PE.LLM && PE.LLM.isConfigured() ? 'AI draft' : 'deterministic draft');
     try {
       if (PE.LLM && PE.LLM.isConfigured()) {
         result.summary          = await PE.LLM.summarize(Object.assign({}, formData, { fileName: file.name }), findings);
         result.correctionLetter = await PE.LLM.draftCorrectionLetter(Object.assign({}, formData, { fileName: file.name }), findings);
         emit('draft', 'done', 'AI-generated summary and correction letter ready.');
+        _stepLog('draft', 'done', 'AI draft complete', { durationMs: Math.round(_now() - sT0) });
       } else {
         result.summary = buildDeterministicSummary(Object.assign({}, formData, { fileName: file.name }), findings, compScore);
         emit('draft', 'done', 'Summary generated. Configure an LLM API key for AI-enhanced narrative.');
+        _stepLog('draft', 'done', 'deterministic summary', { durationMs: Math.round(_now() - sT0) });
       }
     } catch (err) {
       result.summary = buildDeterministicSummary(Object.assign({}, formData, { fileName: file.name }), findings, compScore);
       emit('draft', 'error', 'LLM draft failed (' + err.message + ') — deterministic summary used.');
+      if (L) L.error('pipeline', 'draft failed: ' + err.message, { error: err && err.stack });
     }
+
+    if (L) L.info('pipeline', 'Pipeline complete', { totalMs: Math.round(_now() - pipeT0), score: result.score, findings: result.findings.length });
 
     return result;
   }

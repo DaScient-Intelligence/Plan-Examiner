@@ -208,8 +208,11 @@ PE.Export = (function () {
     var exportData = {
       exported:    new Date().toISOString(),
       project:     data.projectInfo,
+      file:        data.fileMeta || (data.fileHash ? { sha256: data.fileHash } : null),
       score:       data.score,
       findings:    data.findings,
+      coverage:    data.coverage || null,
+      placeholders:data.placeholders || null,
       factsExtracted: data.facts
     };
     var blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });

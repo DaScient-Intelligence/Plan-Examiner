@@ -628,6 +628,27 @@
         <div id="pipelineSteps" aria-live="polite">
           <p class="text-center py-8 text-sm" style="color:#475569;">Upload a plan file to watch the pipeline run.</p>
         </div>
+
+        <!-- Verbose / diagnostic log -->
+        <details id="verboseLogPanel" class="glass rounded-2xl p-4 mt-4" style="border:1px solid rgba(56,189,248,.15);">
+          <summary style="cursor:pointer;font-size:.85rem;color:#38bdf8;font-weight:600;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-terminal text-xs" aria-hidden="true"></i>
+            <span>Verbose Log</span>
+            <span id="verboseLogStatus" style="font-size:.7rem;color:#64748b;font-weight:400;margin-left:auto;">disabled</span>
+          </summary>
+          <div class="mt-3" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+            <label style="font-size:.7rem;color:#94a3b8;display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" id="verboseLogToggle" style="accent-color:#38bdf8;" />
+              <span>Enable verbose logging (persists via <code style="color:#7dd3fc;">localStorage</code> / <code style="color:#7dd3fc;">?verbose=1</code>)</span>
+            </label>
+            <span style="flex:1;"></span>
+            <button id="verboseLogCopy" type="button" class="text-xs px-3 py-1 rounded-lg border" style="color:#94a3b8;border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.025);"><i class="fas fa-copy text-xs mr-1" aria-hidden="true"></i>Copy</button>
+            <button id="verboseLogDownload" type="button" class="text-xs px-3 py-1 rounded-lg border" style="color:#94a3b8;border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.025);"><i class="fas fa-download text-xs mr-1" aria-hidden="true"></i>Download .log</button>
+            <button id="verboseLogClear" type="button" class="text-xs px-3 py-1 rounded-lg border" style="color:#94a3b8;border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.025);"><i class="fas fa-eraser text-xs mr-1" aria-hidden="true"></i>Clear</button>
+          </div>
+          <div id="verboseLogFileMeta" class="mt-3" style="font-size:.7rem;color:#64748b;font-family:'ui-monospace',monospace;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:8px;display:none;"></div>
+          <div id="verboseLogBody" class="mt-3" style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px;font-family:'ui-monospace',monospace;font-size:.7rem;line-height:1.5;max-height:320px;overflow-y:auto;color:#94a3b8;"></div>
+        </details>
       </div>
       <div class="tab-pane" id="tabPreview" role="tabpanel">
         <div id="previewContainer" class="glass rounded-2xl p-6 text-sm overflow-auto" style="max-height:420px;color:#94a3b8;min-height:120px;">
@@ -823,6 +844,7 @@
      cat pdf.min.js | openssl dgst -sha384 -binary | openssl base64 -A -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }</script>
+<script src="assets/js/utils/log.js"></script>
 <script src="assets/js/agent/rule-engine.js"></script>
 <script src="assets/js/agent/extractors.js"></script>
 <script src="assets/js/agent/llm-bridge.js"></script>

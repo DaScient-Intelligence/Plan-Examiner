@@ -37,6 +37,7 @@ PE.App = (function () {
     _initKeyboardShortcuts();
     _initCommandPalette();
     _initHistoryTab();
+    _initVerboseLogPanel();
     _registerSW();
   }
 
@@ -276,16 +277,26 @@ PE.App = (function () {
       _currentFile = file;
 
       try {
-        // Hash file for traceability
-        var fileBuf = await file.arrayBuffer();
-        var fileHash = await (PE.Export ? PE.Export.hashFile(fileBuf) : Promise.resolve(null));
-
         var result = await PE.Pipeline.run(file, formData, function (stepId, status, detail) {
           _updatePipelineStep(stepId, status, detail);
         });
 
+        // Surface file integrity metadata (extracted by extractors.js) to
+        // the verbose panel so the user can confirm the right file was
+        // ingested. Fall back to a fresh hash if not available.
+        var meta = (result.rawExtraction && result.rawExtraction.fileMeta) || null;
+        if (!meta) {
+          var fileBuf  = await file.arrayBuffer();
+          var fileHash = await (PE.Export ? PE.Export.hashFile(fileBuf) : Promise.resolve(null));
+          meta = { fileName: file.name, sizeBytes: file.size, mimeType: file.type || 'unknown',
+                   lastModified: file.lastModified ? new Date(file.lastModified).toISOString() : null,
+                   sha256: fileHash };
+        }
+        _renderFileMetaInVerbosePanel(meta);
+
         result.projectInfo = Object.assign({ fileName: file.name }, formData);
-        result.fileHash    = fileHash;
+        result.fileHash    = meta && meta.sha256;
+        result.fileMeta    = meta;
         _currentResult     = result;
         _chatHistory       = [];
         _chatContext       = { projectInfo: result.projectInfo, facts: result.facts, findings: result.findings };
@@ -320,9 +331,15 @@ PE.App = (function () {
       el.className = 'pipeline-step pending';
       var statusEl = el.querySelector('.step-status');
       if (statusEl) statusEl.textContent = '';
+      var detailEl = el.querySelector('.step-detail');
+      if (detailEl) detailEl.textContent = '';
       var iconEl = el.querySelector('.step-icon i');
       if (iconEl) { iconEl.className = 'fas ' + step.icon; }
     });
+    // Clear verbose log file-meta and (optionally) buffer for a fresh run.
+    var metaEl = document.getElementById('verboseLogFileMeta');
+    if (metaEl) { metaEl.style.display = 'none'; metaEl.innerHTML = ''; }
+    if (PE.Log) PE.Log.clear();
   }
 
   function _updatePipelineStep(stepId, status, detail) {
@@ -344,29 +361,51 @@ PE.App = (function () {
     var container = document.getElementById('previewContainer');
     if (!container) return;
     var extraction = result.rawExtraction || {};
+    var meta = result.fileMeta || extraction.fileMeta || null;
+    var metaHtml = '';
+    if (meta) {
+      metaHtml =
+        '<div style="background:rgba(56,189,248,.04);border:1px solid rgba(56,189,248,.15);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:.7rem;color:#94a3b8;font-family:\'ui-monospace\',monospace;line-height:1.55;">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:14px;">' +
+        '<span><strong style="color:#7dd3fc;">Size:</strong> ' + (meta.sizeBytes != null ? meta.sizeBytes.toLocaleString() : 'n/a') + ' B</span>' +
+        '<span><strong style="color:#7dd3fc;">MIME:</strong> ' + _esc(meta.mimeType || 'unknown') + '</span>' +
+        '<span><strong style="color:#7dd3fc;">Modified:</strong> ' + _esc(meta.lastModified || 'n/a') + '</span>' +
+        (extraction.parseDurationMs != null ? '<span><strong style="color:#7dd3fc;">Parsed in:</strong> ' + extraction.parseDurationMs + ' ms</span>' : '') +
+        '</div>' +
+        '<div style="margin-top:4px;word-break:break-all;"><strong style="color:#7dd3fc;">SHA-256:</strong> ' + _esc(meta.sha256 || 'n/a') + '</div>' +
+        (extraction.warningMsg ? '<div style="margin-top:6px;color:#fbbf24;"><i class="fas fa-triangle-exclamation mr-1" aria-hidden="true"></i>' + _esc(extraction.warningMsg) + '</div>' : '') +
+        '</div>';
+    }
 
     if (extraction.source === 'dwg') {
-      container.innerHTML = '<div style="text-align:center;padding:48px 24px;">' +
+      container.innerHTML = metaHtml + '<div style="text-align:center;padding:48px 24px;">' +
         '<i class="fas fa-drafting-compass" style="font-size:2.5rem;color:#38bdf8;display:block;margin-bottom:16px;"></i>' +
         '<p style="font-weight:600;color:#fff;margin-bottom:8px;">DWG file received: ' + _esc(result.projectInfo.fileName) + '</p>' +
         '<p style="font-size:.875rem;color:#64748b;">Native DWG rendering requires the full engine. Convert to DXF or PDF for automated analysis.</p></div>';
     } else if (extraction.source === 'pdf') {
-      container.innerHTML = '<div style="text-align:center;padding:32px 24px;">' +
+      container.innerHTML = metaHtml + '<div style="text-align:center;padding:32px 24px;">' +
         '<i class="fas fa-file-pdf" style="font-size:2.5rem;color:#f87171;display:block;margin-bottom:12px;"></i>' +
         '<p style="font-weight:600;color:#fff;margin-bottom:8px;">' + _esc(result.projectInfo.fileName) + '</p>' +
         '<p style="font-size:.875rem;color:#64748b;margin-bottom:16px;">' + (extraction.pageCount || '?') + ' page(s) · Text extracted for analysis</p>' +
         '<div style="text-align:left;font-size:.75rem;color:#94a3b8;max-height:260px;overflow-y:auto;white-space:pre-wrap;background:rgba(255,255,255,.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,.06);">' + _esc((extraction.text || '').slice(0, 2000)) + (extraction.text && extraction.text.length > 2000 ? '…' : '') + '</div></div>';
     } else if (extraction.source === 'dxf') {
-      container.innerHTML = '<div style="padding:16px;">' +
+      container.innerHTML = metaHtml + '<div style="padding:16px;">' +
         '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
         '<i class="fas fa-vector-square" style="color:#38bdf8;font-size:1.5rem;"></i>' +
         '<div><p style="font-weight:600;color:#fff;margin:0;">' + _esc(result.projectInfo.fileName) + '</p>' +
         '<p style="font-size:.75rem;color:#64748b;margin:0;">' + (extraction.layers ? extraction.layers.length + ' layers · ' : '') + (extraction.lineCount || 0) + ' LINE entities · ' + (extraction.textEntities || 0) + ' text entities</p></div></div>' +
         (extraction.layers && extraction.layers.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">' + extraction.layers.slice(0, 20).map(function (l) { return '<span style="font-size:.65rem;padding:2px 8px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);border-radius:4px;color:#7dd3fc;">' + _esc(l) + '</span>'; }).join('') + (extraction.layers.length > 20 ? '<span style="font-size:.65rem;color:#64748b;">+' + (extraction.layers.length - 20) + ' more</span>' : '') + '</div>' : '') + '</div>';
     } else if (extraction.source === 'docx') {
-      container.innerHTML = '<div style="color:#cbd5e1;font-size:.875rem;line-height:1.7;">' + _extractDocxHtml(result) + '</div>';
+      container.innerHTML = metaHtml + '<div style="color:#cbd5e1;font-size:.875rem;line-height:1.7;">' + _extractDocxHtml(result) + '</div>';
+    } else if (extraction.source === 'image') {
+      container.innerHTML = metaHtml + '<div style="padding:16px;">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">' +
+        '<i class="fas fa-image" style="color:#38bdf8;font-size:1.5rem;"></i>' +
+        '<div><p style="font-weight:600;color:#fff;margin:0;">' + _esc(result.projectInfo.fileName) + '</p>' +
+        '<p style="font-size:.75rem;color:#64748b;margin:0;">OCR extracted ' + (extraction.text || '').length + ' chars</p></div></div>' +
+        '<div style="text-align:left;font-size:.75rem;color:#94a3b8;max-height:240px;overflow-y:auto;white-space:pre-wrap;background:rgba(255,255,255,.02);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,.06);">' + _esc((extraction.text || '').slice(0, 2000)) + (extraction.text && extraction.text.length > 2000 ? '…' : '') + '</div></div>';
     } else {
-      container.innerHTML = '<p style="text-align:center;padding:48px;color:#64748b;">No preview available for this file type.</p>';
+      container.innerHTML = metaHtml + '<p style="text-align:center;padding:48px;color:#64748b;">No preview available for this file type' + (extraction.unsupportedReason ? ': ' + _esc(extraction.unsupportedReason) : '.') + '</p>';
     }
   }
 
@@ -404,6 +443,32 @@ PE.App = (function () {
       html += '<div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:16px;margin-bottom:16px;">' +
         '<div style="font-size:.7rem;color:#38bdf8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">Summary</div>' +
         '<div style="font-size:.8rem;line-height:1.65;color:#94a3b8;white-space:pre-wrap;">' + _esc(result.summary).replace(/\*\*(.+?)\*\*/g, '<strong style="color:#fff;">$1</strong>').replace(/^##\s+(.+)$/gm, '<strong style="color:#e2e8f0;font-size:.9rem;">$1</strong>').replace(/^-\s+/gm, '• ') + '</div></div>';
+    }
+
+    // Rule coverage report — surfaces which evidence keys were used vs missing.
+    // Helps the user understand *why* certain rules ended up REVIEW (data
+    // unavailable) instead of PASS/FLAGGED.
+    if (Array.isArray(result.coverage) && result.coverage.length) {
+      var totalKeys   = result.coverage.length;
+      var missingKeys = result.coverage.filter(function (c) { return c.missing; });
+      var presentKeys = totalKeys - missingKeys.length;
+      html += '<details style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px 16px;margin-bottom:16px;">' +
+        '<summary style="cursor:pointer;font-size:.7rem;color:#38bdf8;text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:10px;">' +
+        '<span>Rule Coverage</span>' +
+        '<span style="font-size:.7rem;color:#cbd5e1;text-transform:none;letter-spacing:0;font-weight:400;">' +
+        presentKeys + ' / ' + totalKeys + ' evidence keys present · ' + missingKeys.length + ' missing' +
+        '</span></summary>' +
+        '<div style="margin-top:10px;font-size:.75rem;color:#94a3b8;">' +
+        (missingKeys.length
+          ? '<p style="margin:0 0 6px 0;">Rules that need additional input (' + missingKeys.length + '):</p>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+            missingKeys.map(function (c) {
+              return '<span title="' + _esc(c.used_by.map(function (u) { return u.pack_id + '/' + u.rule_id; }).join(', ')) +
+                '" style="font-size:.65rem;padding:2px 8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:4px;color:#fbbf24;">' + _esc(c.key) + '</span>';
+            }).join('') +
+            '</div>'
+          : '<p style="margin:0;color:#34d399;">All evidence keys for the selected rule packs are present.</p>') +
+        '</div></details>';
     }
 
     // Filter bar
@@ -999,6 +1064,100 @@ PE.App = (function () {
     } catch (e) {
       setStatus('Unable to verify right now. Please try again or contact plan-examiner@dascient.com.', '#f87171');
     }
+  }
+
+  // ── Verbose / diagnostic log panel ────────────────────────────────────
+  function _initVerboseLogPanel() {
+    if (!PE.Log) return;
+    var panel    = document.getElementById('verboseLogPanel');
+    var toggle   = document.getElementById('verboseLogToggle');
+    var statusEl = document.getElementById('verboseLogStatus');
+    var bodyEl   = document.getElementById('verboseLogBody');
+    var copyBtn  = document.getElementById('verboseLogCopy');
+    var dlBtn    = document.getElementById('verboseLogDownload');
+    var clearBtn = document.getElementById('verboseLogClear');
+
+    function refreshStatus() {
+      var on = PE.Log.isEnabled();
+      if (toggle)   toggle.checked = on;
+      if (statusEl) {
+        statusEl.textContent = on ? 'enabled' : 'disabled';
+        statusEl.style.color = on ? '#34d399' : '#64748b';
+      }
+    }
+    function renderEntry(e) {
+      if (!bodyEl) return;
+      var color = e.level === 'error' ? '#fca5a5'
+                : e.level === 'warn'  ? '#fde68a'
+                : e.level === 'info'  ? '#bae6fd'
+                : e.level === 'debug' ? '#94a3b8'
+                : '#64748b';
+      var line = document.createElement('div');
+      line.style.cssText = 'color:' + color + ';white-space:pre-wrap;word-break:break-word;border-bottom:1px solid rgba(255,255,255,.03);padding:2px 0;';
+      var head = '+' + e.elapsedMs + 'ms ' + e.level.toUpperCase() + ' [' + e.stage + '] ' + e.msg;
+      line.textContent = head + (e.data ? '  ' + _safeStringify(e.data) : '');
+      bodyEl.appendChild(line);
+      // Cap displayed lines to avoid runaway DOM growth.
+      while (bodyEl.childNodes.length > 500) bodyEl.removeChild(bodyEl.firstChild);
+      bodyEl.scrollTop = bodyEl.scrollHeight;
+    }
+    function rerenderAll() {
+      if (!bodyEl) return;
+      bodyEl.innerHTML = '';
+      PE.Log.entries().forEach(renderEntry);
+    }
+
+    if (toggle) toggle.addEventListener('change', function () {
+      PE.Log.setEnabled(toggle.checked);
+      refreshStatus();
+      rerenderAll();
+    });
+    if (copyBtn) copyBtn.addEventListener('click', function () {
+      var txt = PE.Log.formatText();
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(txt).then(function () {
+          copyBtn.innerHTML = '<i class="fas fa-check text-xs mr-1"></i>Copied!';
+          setTimeout(function () { copyBtn.innerHTML = '<i class="fas fa-copy text-xs mr-1"></i>Copy'; }, 1500);
+        });
+      }
+    });
+    if (dlBtn) dlBtn.addEventListener('click', function () {
+      var blob = new Blob([PE.Log.formatText()], { type: 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'plan-examiner-' + Date.now() + '.log';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 200);
+    });
+    if (clearBtn) clearBtn.addEventListener('click', function () {
+      PE.Log.clear();
+      if (bodyEl) bodyEl.innerHTML = '';
+    });
+
+    refreshStatus();
+    rerenderAll();
+    PE.Log.subscribe(renderEntry);
+
+    // Auto-open the panel when verbose was activated via URL flag, so the
+    // user sees the live stream without an extra click.
+    if (panel && PE.Log.isEnabled()) panel.open = true;
+  }
+
+  function _renderFileMetaInVerbosePanel(meta) {
+    var el = document.getElementById('verboseLogFileMeta');
+    if (!el || !meta) return;
+    el.style.display = 'block';
+    el.innerHTML =
+      '<div><strong style="color:#7dd3fc;">File:</strong> ' + _esc(meta.fileName) + '</div>' +
+      '<div><strong style="color:#7dd3fc;">Size:</strong> ' + (meta.sizeBytes != null ? meta.sizeBytes.toLocaleString() + ' bytes' : 'n/a') + '</div>' +
+      '<div><strong style="color:#7dd3fc;">MIME:</strong> ' + _esc(meta.mimeType || 'unknown') + '</div>' +
+      '<div><strong style="color:#7dd3fc;">Modified:</strong> ' + _esc(meta.lastModified || 'n/a') + '</div>' +
+      '<div style="word-break:break-all;"><strong style="color:#7dd3fc;">SHA-256:</strong> ' + _esc(meta.sha256 || 'n/a') + '</div>';
+  }
+
+  function _safeStringify(v) {
+    try { return JSON.stringify(v); } catch (e) { return String(v); }
   }
 
   // ── Service Worker ────────────────────────────────────────────────────

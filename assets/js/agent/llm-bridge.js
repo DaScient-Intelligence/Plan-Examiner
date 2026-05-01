@@ -133,13 +133,32 @@ PE.LLM = (function () {
   async function send(messages, signal) {
     var cfg = getConfig();
     if (!cfg || !cfg.provider) throw new Error('LLM not configured. Open AI Settings to add your API key.');
-    switch (cfg.provider) {
-      case 'openai':    return callOpenAI(cfg, messages, signal);
-      case 'anthropic': return callAnthropic(cfg, messages, signal);
-      case 'azure':     return callAzure(cfg, messages, signal);
-      case 'ollama':    return callOllama(cfg, messages, signal);
-      default:          throw new Error('Unknown provider: ' + cfg.provider);
+    var L = (window.PE && window.PE.Log) ? window.PE.Log : null;
+    var promptChars = messages.reduce(function (a, m) { return a + (m.content ? String(m.content).length : 0); }, 0);
+    var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (L) L.info('llm', 'request → ' + cfg.provider + ' (' + (cfg.model || '(default)') + ')', {
+      provider: cfg.provider, model: cfg.model, baseUrl: cfg.baseUrl, promptChars: promptChars, messages: messages.length
+      // Note: cfg.apiKey is intentionally NEVER included here.
+    });
+    var out;
+    try {
+      switch (cfg.provider) {
+        case 'openai':    out = await callOpenAI(cfg, messages, signal); break;
+        case 'anthropic': out = await callAnthropic(cfg, messages, signal); break;
+        case 'azure':     out = await callAzure(cfg, messages, signal); break;
+        case 'ollama':    out = await callOllama(cfg, messages, signal); break;
+        default:          throw new Error('Unknown provider: ' + cfg.provider);
+      }
+    } catch (e) {
+      var t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      if (L) L.error('llm', 'response error from ' + cfg.provider + ' after ' + Math.round(t1 - t0) + 'ms: ' + (e && e.message), { provider: cfg.provider, model: cfg.model, durationMs: Math.round(t1 - t0) });
+      throw e;
     }
+    var t2 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (L) L.info('llm', 'response ← ' + cfg.provider + ' in ' + Math.round(t2 - t0) + 'ms (' + (out ? out.length : 0) + ' chars)', {
+      provider: cfg.provider, model: cfg.model, promptChars: promptChars, responseChars: out ? out.length : 0, durationMs: Math.round(t2 - t0)
+    });
+    return out;
   }
 
   // ── High-level convenience methods ──────────────────────────────────

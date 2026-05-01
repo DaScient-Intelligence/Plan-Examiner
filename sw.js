@@ -3,7 +3,7 @@
  * Caches static assets for offline use (PWA).
  */
 
-var CACHE_NAME = 'plan-examiner-v3';
+var CACHE_NAME = 'plan-examiner-v4';
 var STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ var STATIC_ASSETS = [
   '/assets/js/agent/extractors.js',
   '/assets/js/agent/llm-bridge.js',
   '/assets/js/agent/pipeline.js',
+  '/assets/js/utils/log.js',
   '/assets/js/utils/history.js',
   '/assets/js/utils/export.js',
   '/assets/data/rules/index.json',

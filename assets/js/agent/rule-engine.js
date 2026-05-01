@@ -472,6 +472,8 @@ PE.RuleEngine = (function () {
     opts = opts || {};
     var globalPlaceholders = opts.placeholders || {};
     var raw = [];
+    var L = (typeof window !== 'undefined' && window.PE && window.PE.Log) ? window.PE.Log : null;
+    var skipped = { applies_to: 0, applies_when: 0, disabled: 0 };
 
     packs.forEach(function (pack) {
       if (!pack || !Array.isArray(pack.rules)) return;
@@ -484,9 +486,21 @@ PE.RuleEngine = (function () {
       });
 
       pack.rules.forEach(function (rule) {
-        if (rule.disabled) return;
-        if (!rule.applies_to || !rule.applies_to.some(function (t) { return t === buildingType || t === 'Other'; })) return;
-        if (rule.applies_when && !evaluateAppliesWhen(rule.applies_when, facts, packPlaceholders)) return;
+        if (rule.disabled) {
+          skipped.disabled++;
+          if (L) L.trace('rule-engine', 'skip ' + pack.id + '/' + rule.id + ' (disabled)');
+          return;
+        }
+        if (!rule.applies_to || !rule.applies_to.some(function (t) { return t === buildingType || t === 'Other'; })) {
+          skipped.applies_to++;
+          if (L) L.trace('rule-engine', 'skip ' + pack.id + '/' + rule.id + ' (applies_to mismatch)', { applies_to: rule.applies_to, buildingType: buildingType });
+          return;
+        }
+        if (rule.applies_when && !evaluateAppliesWhen(rule.applies_when, facts, packPlaceholders)) {
+          skipped.applies_when++;
+          if (L) L.trace('rule-engine', 'skip ' + pack.id + '/' + rule.id + ' (applies_when=false)', { expr: rule.applies_when });
+          return;
+        }
 
         var params = resolveParameters(rule, facts, packPlaceholders);
         var checkFn = checks[rule.check_fn];
@@ -508,6 +522,7 @@ PE.RuleEngine = (function () {
             outcome = checkFn(facts, params, { rule: rule, placeholders: packPlaceholders, renderedNote: renderedNote });
           } catch (e) {
             outcome = { status: 'REVIEW', note: 'Rule evaluation error: ' + (e && e.message ? e.message : 'unknown') + ' — verify manually.' };
+            if (L) L.warn('rule-engine', 'check error in ' + pack.id + '/' + rule.id, { error: e && e.message });
           }
         }
 
@@ -519,7 +534,17 @@ PE.RuleEngine = (function () {
           if (missing.length === rule.evidence_keys.length) {
             outcome.note = (outcome.note ? outcome.note + ' ' : '') +
               '(Missing evidence: ' + missing.join(', ') + '.)';
+            if (L) L.info('rule-engine', 'missing-evidence skip ' + pack.id + '/' + rule.id, { missing: missing });
           }
+        }
+
+        if (L) {
+          var factsUsed = {};
+          (rule.evidence_keys || []).forEach(function (k) { if (facts[k] !== undefined) factsUsed[k] = facts[k]; });
+          L.debug('rule-engine', 'rule ' + pack.id + '/' + rule.id + ' → ' + outcome.status, {
+            packId: pack.id, ruleId: rule.id, status: outcome.status,
+            note: outcome.note, factsUsed: factsUsed
+          });
         }
 
         raw.push({
@@ -544,7 +569,14 @@ PE.RuleEngine = (function () {
       });
     });
 
-    return _dedupeByAliases(raw);
+    var deduped = _dedupeByAliases(raw);
+    if (L) L.info('rule-engine', 'evaluation complete', {
+      packs: packs.length,
+      rulesEvaluated: raw.length,
+      skipped: skipped,
+      findingsAfterDedupe: deduped.length
+    });
+    return deduped;
   }
 
   function _placeholderDefaults(pack) {
