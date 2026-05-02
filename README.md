@@ -238,3 +238,19 @@ npm test           # runs node --test against tests/
 ```
 
 Covers `Extractors.parse`, `Extractors.fromDxf`, `RuleEngine.evaluate`, and `Pipeline.run` with fixture-based and mocked inputs. The same suite runs in CI on every PR (see `.github/workflows/ci.yml`).
+
+---
+
+## Training & Knowledge-Sharing
+
+A comprehensive train-the-trainer library lives in [`docs/training/`](docs/training/README.md), covering every level of the business — from operators using Plan-Examiner, to teams that hire and onboard new reviewers, to executive leadership, operations, and our employee-ownership model.
+
+| Track | Start here |
+| --- | --- |
+| Foundations & demo script | [docs/training/01-foundations](docs/training/01-foundations/plan-examiner-primer.md) |
+| End-user / operator | [docs/training/02-end-user](docs/training/02-end-user/user-handbook.md) |
+| Train-the-trainer & curriculum | [docs/training/03-trainer](docs/training/03-trainer/train-the-trainer-handbook.md) |
+| Hiring & onboarding | [docs/training/04-onboarding](docs/training/04-onboarding/hiring-team-playbook.md) |
+| Executive briefing & leadership | [docs/training/05-executive](docs/training/05-executive/executive-briefing.md) |
+| Operations & sustainability | [docs/training/06-operations](docs/training/06-operations/company-operations-manual.md) |
+| Employee ownership, governance & equity | [docs/training/07-employee-ownership](docs/training/07-employee-ownership/employee-ownership-handbook.md) |

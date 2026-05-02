@@ -2,6 +2,8 @@
 
 Thank you for your interest in contributing! This document explains how to contribute rule packs, features, bug fixes, and documentation.
 
+> **Looking to contribute training materials?** See the train-the-trainer library at [`docs/training/`](docs/training/README.md). PRs against any of those tracks (foundations, end-user, trainer, onboarding, executive, operations, employee-ownership) are welcome.
+
 ## Quick Start
 
 1. **Fork** the repository on GitHub.
